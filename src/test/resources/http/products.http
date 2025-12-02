@@ -1,0 +1,115 @@
+@baseUrl = http://localhost:8080
+
+@productId = 692f24bc4d1214e6688e23a9
+### Create product
+POST {{baseUrl}}/api/products
+Content-Type: application/json
+
+{
+  "userId": "user-123",
+  "name": "Test Product 4",
+  "quantityBought": 12.0,
+  "quantityConsumed": 2.0,
+  "unit": "kg",
+  "purchaseDate": "2025-11-30",
+  "expirationDate": "2027-11-30"
+}
+> {%
+    // store created id into global variable "productId" (handles `id` or `_id`)
+    var body = JSON.parse(response.body || "{}");
+    client.global.set("productId", body.id || body._id || "");
+%}
+
+
+### Get product by id
+GET {{baseUrl}}/api/products/{{productId}}
+Accept: application/json
+
+
+
+### Get products by userId
+GET {{baseUrl}}/api/products/user/user-123
+Accept: application/json
+
+
+
+### Update product
+PUT {{baseUrl}}/api/products/{{productId}}
+Content-Type: application/json
+
+{
+  "userId": "user-123",
+  "name": "Updated Product",
+  "quantityBought": 12.0,
+  "quantityConsumed": 3.0,
+  "unit": "kg",
+  "purchaseDate": "2025-12-01",
+  "expirationDate": "2026-12-01"
+}
+
+
+### Delete product
+DELETE {{baseUrl}}/api/products/{{productId}}
+
+
+### Verify deletion (should return 404 / not found)
+GET {{baseUrl}}/api/products/{{productId}}
+Accept: application/json
+
+
+### Patch - update quantityConsumed (happy path)
+PATCH {{baseUrl}}/api/products/{{productId}}/quantity-consumed
+Content-Type: application/json
+
+{
+  "quantityConsumed": 12.0
+}
+
+
+### Patch - update quantityConsumed (error: exceeds quantityBought)
+PATCH {{baseUrl}}/api/products/{{productId}}/quantity-consumed
+Content-Type: application/json
+
+{
+  "quantityConsumed": 50.0
+}
+
+
+### Pagination tests - default (page 0, size 10)
+GET {{baseUrl}}/api/products/user/user-123
+Accept: application/json
+
+
+### Pagination tests - page 0, size 2
+GET {{baseUrl}}/api/products/user/user-123?pageNumber=0&pageSize=2
+Accept: application/json
+
+
+### Pagination tests - page 1, size 2
+GET {{baseUrl}}/api/products/user/user-123?pageNumber=0&pageSize=2
+Accept: application/json
+
+
+### Pagination + sort - expirationDate desc
+GET {{baseUrl}}/api/products/user/user-123?pageNumber=1&pageSize=5&sortBy=expirationDate&sortDirection=desc
+Accept: application/json
+
+
+### Pagination + sort - status asc
+GET {{baseUrl}}/api/products/user/user-123?pageNumber=0&pageSize=5&sortBy=status&sortDirection=asc
+Accept: application/json
+
+
+### Invalid sort field (expect 400 Bad Request)
+GET {{baseUrl}}/api/products/user/user-123?sortBy=invalidField
+Accept: application/json
+
+
+### Invalid page params (negative pageNumber) (expect 400 Bad Request)
+GET {{baseUrl}}/api/products/user/user-123?pageNumber=-1&pageSize=10
+Accept: application/json
+
+
+### Large pageSize (smoke) - observe behavior
+GET {{baseUrl}}/api/products/user/user-123?pageNumber=0&pageSize=1000&sortBy=name&sortDirection=asc
+Accept: application/json

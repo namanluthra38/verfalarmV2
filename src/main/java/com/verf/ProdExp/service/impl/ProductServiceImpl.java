@@ -100,7 +100,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Page<ProductResponse> getByUserId(Pageable pageable, String userId) {
+    public Page<ProductResponse> getByUser(Pageable pageable, String userId) {
         if (userId == null || userId.trim().isEmpty()) {
             throw new BadRequestException("userId is required");
         }

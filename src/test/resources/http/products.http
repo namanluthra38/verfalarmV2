@@ -1,44 +1,78 @@
 @baseUrl = http://localhost:8080
+@productId = 69667719b23142a3951b95c8
+@userId = 69667a01b23142a3951b95c9
+@jwtToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OTY2N2EwMWIyMzE0MmEzOTUxYjk1YzkiLCJpYXQiOjE3NjgzMjM2MDksImV4cCI6MTc2ODMyNzIwOX0.yrP-w4MxRG7C7NbhjQ4kT-m4eQEtpkYtd2CH1bzukGs
 
-@productId = 692f24bc4d1214e6688e23a9
-### Create product
-POST {{baseUrl}}/api/products
+### Register test user
+POST {{baseUrl}}/api/auth/register
 Content-Type: application/json
 
 {
-  "userId": "user-123",
-  "name": "Test Product 4",
-  "quantityBought": 12.0,
-  "quantityConsumed": 2.0,
-  "unit": "kg",
-  "purchaseDate": "2025-11-30",
-  "expirationDate": "2027-11-30"
+  "email": "testuser2@example.com",
+  "password": "secret123",
+  "displayName": "Test User 2"
+}
+
+### Login to obtain JWT
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "testuser2@example.com",
+  "password": "secret123"
 }
 > {%
-    // store created id into global variable "productId" (handles `id` or `_id`)
+    var body = JSON.parse(response.body || "{}");
+    client.global.set("jwtToken", body.token || "");
+    client.global.set("userId", body.userId || "");
+%}
+
+
+### Verify token - get current user
+GET {{baseUrl}}/api/auth/me
+Accept: application/json
+Authorization: Bearer {{jwtToken}}
+
+
+### Create product (as authenticated user)
+POST {{baseUrl}}/api/products
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "name": "Test Product 5",
+  "quantityBought": 10.0,
+  "quantityConsumed": 7.0,
+  "unit": "l",
+  "purchaseDate": "2025-11-30",
+  "expirationDate": "2026-11-30"
+}
+> {%
     var body = JSON.parse(response.body || "{}");
     client.global.set("productId", body.id || body._id || "");
 %}
 
 
-### Get product by id
+### Get product by id (as authenticated user)
 GET {{baseUrl}}/api/products/{{productId}}
 Accept: application/json
+Authorization: Bearer {{jwtToken}}
 
 
 
-### Get products by userId
-GET {{baseUrl}}/api/products/user/user-123
+### Get products by user (as authenticated user)
+GET {{baseUrl}}/api/products/user/{{userId}}
 Accept: application/json
+Authorization: Bearer {{jwtToken}}
 
 
 
-### Update product
+### Update product (as owner)
 PUT {{baseUrl}}/api/products/{{productId}}
 Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
 
 {
-  "userId": "user-123",
   "name": "Updated Product",
   "quantityBought": 12.0,
   "quantityConsumed": 3.0,
@@ -48,18 +82,21 @@ Content-Type: application/json
 }
 
 
-### Delete product
+### Delete product (as owner)
 DELETE {{baseUrl}}/api/products/{{productId}}
+Authorization: Bearer {{jwtToken}}
 
 
-### Verify deletion (should return 404 / not found)
+### Verify deletion (should return 404 / not found) (as owner)
 GET {{baseUrl}}/api/products/{{productId}}
 Accept: application/json
+Authorization: Bearer {{jwtToken}}
 
 
 ### Patch - update quantityConsumed (happy path)
 PATCH {{baseUrl}}/api/products/{{productId}}/quantity-consumed
 Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
 
 {
   "quantityConsumed": 12.0
@@ -69,47 +106,44 @@ Content-Type: application/json
 ### Patch - update quantityConsumed (error: exceeds quantityBought)
 PATCH {{baseUrl}}/api/products/{{productId}}/quantity-consumed
 Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
 
 {
   "quantityConsumed": 50.0
 }
 
 
-### Pagination tests - default (page 0, size 10)
-GET {{baseUrl}}/api/products/user/user-123
-Accept: application/json
-
-
-### Pagination tests - page 0, size 2
-GET {{baseUrl}}/api/products/user/user-123?pageNumber=0&pageSize=2
-Accept: application/json
-
-
-### Pagination tests - page 1, size 2
-GET {{baseUrl}}/api/products/user/user-123?pageNumber=0&pageSize=2
-Accept: application/json
-
-
 ### Pagination + sort - expirationDate desc
-GET {{baseUrl}}/api/products/user/user-123?pageNumber=1&pageSize=5&sortBy=expirationDate&sortDirection=desc
+GET {{baseUrl}}/api/products/user/{{userId}}?pageNumber=1&pageSize=5&sortBy=expirationDate&sortDirection=desc
 Accept: application/json
+Authorization: Bearer {{jwtToken}}
 
 
 ### Pagination + sort - status asc
-GET {{baseUrl}}/api/products/user/user-123?pageNumber=0&pageSize=5&sortBy=status&sortDirection=asc
+GET {{baseUrl}}/api/products/user/{{userId}}?pageNumber=0&pageSize=5&sortBy=status&sortDirection=asc
 Accept: application/json
+Authorization: Bearer {{jwtToken}}
 
 
-### Invalid sort field (expect 400 Bad Request)
-GET {{baseUrl}}/api/products/user/user-123?sortBy=invalidField
+### Invalid sort field (expect 400 Bad Request) (as owner user1)
+GET {{baseUrl}}/api/products/user/user1?sortBy=invalidField
 Accept: application/json
+Authorization: Bearer {{jwtToken}}
 
 
-### Invalid page params (negative pageNumber) (expect 400 Bad Request)
-GET {{baseUrl}}/api/products/user/user-123?pageNumber=-1&pageSize=10
+### Invalid page params (negative pageNumber) (expect 400 Bad Request) (as owner user1)
+GET {{baseUrl}}/api/products/user/user1?pageNumber=-1&pageSize=10
 Accept: application/json
+Authorization: Bearer {{jwtToken}}
 
 
-### Large pageSize (smoke) - observe behavior
-GET {{baseUrl}}/api/products/user/user-123?pageNumber=0&pageSize=1000&sortBy=name&sortDirection=asc
+### Large pageSize (smoke) - observe behavior (as owner user1)
+GET {{baseUrl}}/api/products/user/user1?pageNumber=0&pageSize=1000&sortBy=name&sortDirection=asc
 Accept: application/json
+Authorization: Bearer {{jwtToken}}
+
+
+### Admin-only example: retrieve all products as admin (admin basic auth)
+GET {{baseUrl}}/api/products/user/user1
+Accept: application/json
+Authorization: Basic YWRtaW46YWRtaW4=

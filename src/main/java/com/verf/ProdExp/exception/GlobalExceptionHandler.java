@@ -14,7 +14,8 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
-
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import java.time.Instant;
 import java.util.stream.Collectors;
 
@@ -33,6 +34,21 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     protected ResponseEntity<Object> handleBadRequest(BadRequestException ex, WebRequest request) {
         ApiError err = new ApiError(HttpStatus.BAD_REQUEST.value(), "Bad Request", ex.getMessage(), Instant.now(), request.getDescription(false));
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(err);
+    }
+
+    // handle application-level authorization exceptions (explicit checks)
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    protected ResponseEntity<Object> handleAuthorizationDenied(AuthorizationDeniedException ex, WebRequest request) {
+        ApiError err = new ApiError(HttpStatus.FORBIDDEN.value(), "Forbidden", ex.getMessage(), Instant.now(), request.getDescription(false));
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(err);
+    }
+
+    // handle Spring Security AccessDeniedException (method/security layer)
+    @ExceptionHandler(AccessDeniedException.class)
+    protected ResponseEntity<Object> handleAccessDenied(AccessDeniedException ex, WebRequest request) {
+        log.warn("Access denied: {}", ex.getMessage());
+        ApiError err = new ApiError(HttpStatus.FORBIDDEN.value(), "Forbidden", "Access is denied", Instant.now(), request.getDescription(false));
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(err);
     }
 
     @ExceptionHandler(Exception.class)

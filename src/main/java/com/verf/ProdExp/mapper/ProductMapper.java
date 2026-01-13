@@ -5,14 +5,14 @@ import com.verf.ProdExp.dto.ProductResponse;
 import com.verf.ProdExp.entity.Product;
 import com.verf.ProdExp.entity.Status;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
 
 public class ProductMapper {
 
     public static Product toEntity(ProductRequest req) {
-        if (req == null) return null;
-        Product p = Product.builder()
+        return Product.builder()
+                .id(null)
                 .userId(req.userId())
                 .name(req.name())
                 .quantityBought(req.quantityBought())
@@ -20,17 +20,12 @@ public class ProductMapper {
                 .unit(req.unit())
                 .purchaseDate(req.purchaseDate())
                 .expirationDate(req.expirationDate())
+                .createdAt(null)
+                .updatedAt(null)
                 .build();
-        p.setStatus(computeStatus(p));
-        return p;
     }
 
     public static ProductResponse toResponse(Product p) {
-        if (p == null) return null;
-        // ensure status is up-to-date when converting
-        Status status = computeStatus(p);
-        if (p.getStatus() != status) p.setStatus(status);
-
         return new ProductResponse(
                 p.getId(),
                 p.getUserId(),
@@ -42,21 +37,18 @@ public class ProductMapper {
                 p.getExpirationDate(),
                 p.getCreatedAt(),
                 p.getUpdatedAt(),
-                status
+                p.getStatus()
         );
     }
 
     public static Status computeStatus(Product p) {
-        if (p == null) return null;
-        // entity fields are annotated @NonNull, so compare directly
-        double finishedCmp = p.getQuantityConsumed();
-        double boughtCmp = p.getQuantityBought();
-        boolean finished = finishedCmp >= boughtCmp;
-        boolean expired = p.getExpirationDate().isBefore(LocalDate.now(ZoneId.systemDefault()));
-
-        if (finished && expired) return Status.EXPIRED_AND_FINISHED;
-        if (finished) return Status.FINISHED;
-        if (expired) return Status.EXPIRED;
-        return Status.ACTIVE; // neither finished nor expired
+        if (p.getQuantityConsumed() != null && p.getQuantityBought() != null && p.getQuantityConsumed().doubleValue() >= p.getQuantityBought().doubleValue()) {
+            return Status.FINISHED;
+        }
+        if (p.getExpirationDate() != null && p.getExpirationDate().isBefore(LocalDate.now())) {
+            return Status.EXPIRED;
+        }
+        // use AVAILABLE as the neutral state (neither finished nor expired)
+        return Status.AVAILABLE;
     }
 }

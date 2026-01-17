@@ -8,8 +8,8 @@ public record UserResponse(
         String email,
         Set<String> roles,
         boolean enabled,
+        String displayName,
         Instant createdAt,
         Instant updatedAt
 ) {
 }
-

@@ -3,6 +3,7 @@ package com.verf.ProdExp.service;
 import com.verf.ProdExp.dto.ProductRequest;
 import com.verf.ProdExp.dto.ProductResponse;
 import com.verf.ProdExp.dto.QuantityConsumedUpdateRequest;
+import com.verf.ProdExp.entity.NotificationFrequency;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -22,5 +23,17 @@ public interface ProductService {
 
     // Retrieve all products for a given user (paginated)
     Page<ProductResponse> getByUser(Pageable pageable, String userId);
+
+    // Update notification frequency for a product
+    ProductResponse updateNotificationFrequency(String id, NotificationFrequency frequency);
+
+    // Replace the tags list entirely
+    ProductResponse replaceTags(String id, List<String> tags);
+
+    // Add tags (ignore duplicates)
+    ProductResponse addTags(String id, List<String> tags);
+
+    // Remove tags if present
+    ProductResponse removeTags(String id, List<String> tags);
 
 }

@@ -71,7 +71,7 @@ public class AuthController {
             log.debug("Authenticated principal but user not found in DB: userId={}", userId);
             return ResponseEntity.status(404).build();
         }
-        UserResponse resp = new UserResponse(user.getId(), user.getEmail(), user.getRoles(), user.isEnabled(), user.getCreatedAt(), user.getUpdatedAt());
+        UserResponse resp = new UserResponse(user.getId(), user.getEmail(), user.getRoles(), user.isEnabled(), user.getDisplayName(), user.getCreatedAt(), user.getUpdatedAt());
         log.debug("/me returning userId={}", userId);
         return ResponseEntity.ok(resp);
     }

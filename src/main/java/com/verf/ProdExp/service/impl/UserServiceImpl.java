@@ -1,9 +1,11 @@
 package com.verf.ProdExp.service.impl;
 
 import com.verf.ProdExp.dto.RegisterRequest;
+import com.verf.ProdExp.dto.UpdateUserRequest;
 import com.verf.ProdExp.dto.UserResponse;
 import com.verf.ProdExp.entity.User;
 import com.verf.ProdExp.exception.BadRequestException;
+import com.verf.ProdExp.exception.ResourceNotFoundException;
 import com.verf.ProdExp.repository.UserRepository;
 import com.verf.ProdExp.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -34,10 +36,43 @@ public class UserServiceImpl implements UserService {
                 .password(passwordEncoder.encode(req.password()))
                 .roles(Set.of("USER"))
                 .enabled(true)
+                .displayName(req.displayName())
                 .build();
 
         User saved = userRepository.save(u);
-        return new UserResponse(saved.getId(), saved.getEmail(), saved.getRoles(), saved.isEnabled(), saved.getCreatedAt(), saved.getUpdatedAt());
+        return new UserResponse(saved.getId(), saved.getEmail(), saved.getRoles(), saved.isEnabled(), saved.getDisplayName(), saved.getCreatedAt(), saved.getUpdatedAt());
+    }
+
+    @Override
+    public UserResponse getById(String id) {
+        User u = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        return new UserResponse(u.getId(), u.getEmail(), u.getRoles(), u.isEnabled(), u.getDisplayName(), u.getCreatedAt(), u.getUpdatedAt());
+    }
+
+    @Override
+    public UserResponse update(String id, UpdateUserRequest request) {
+        User existing = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        if (request == null) throw new BadRequestException("Request body is required");
+
+        if (request.email() != null && !request.email().equalsIgnoreCase(existing.getEmail())) {
+            if (userRepository.existsByEmail(request.email())) throw new BadRequestException("Email already in use");
+            existing.setEmail(request.email());
+        }
+        if (request.password() != null && request.password().length() >= 6) {
+            existing.setPassword(passwordEncoder.encode(request.password()));
+        }
+        if (request.displayName() != null) {
+            existing.setDisplayName(request.displayName());
+        }
+        if (request.enabled() != null) existing.setEnabled(request.enabled());
+
+        User saved = userRepository.save(existing);
+        return new UserResponse(saved.getId(), saved.getEmail(), saved.getRoles(), saved.isEnabled(), saved.getDisplayName(), saved.getCreatedAt(), saved.getUpdatedAt());
+    }
+
+    @Override
+    public void delete(String id) {
+        if (!userRepository.existsById(id)) throw new ResourceNotFoundException("User not found");
+        userRepository.deleteById(id);
     }
 }
-

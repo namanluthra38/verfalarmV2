@@ -4,6 +4,7 @@ import com.verf.ProdExp.dto.ProductRequest;
 import com.verf.ProdExp.dto.ProductResponse;
 import com.verf.ProdExp.dto.QuantityConsumedUpdateRequest;
 import com.verf.ProdExp.entity.Product;
+import com.verf.ProdExp.entity.NotificationFrequency;
 import com.verf.ProdExp.exception.BadRequestException;
 import com.verf.ProdExp.exception.ResourceNotFoundException;
 import com.verf.ProdExp.mapper.ProductMapper;
@@ -14,7 +15,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -62,6 +66,10 @@ public class ProductServiceImpl implements ProductService {
         existing.setUnit(request.unit());
         existing.setPurchaseDate(request.purchaseDate());
         existing.setExpirationDate(request.expirationDate());
+        // copy notificationFrequency (default to MONTHLY when client omits)
+        existing.setNotificationFrequency(request.notificationFrequency() == null ? NotificationFrequency.MONTHLY : request.notificationFrequency());
+        // copy tags (allow null or empty -> set null if empty to avoid storing empty arrays unnecessarily)
+        existing.setTags(request.tags() == null || request.tags().isEmpty() ? null : List.copyOf(request.tags()));
 
         // recompute status
         existing.setStatus(ProductMapper.computeStatus(existing));
@@ -105,6 +113,51 @@ public class ProductServiceImpl implements ProductService {
             throw new BadRequestException("userId is required");
         }
         return repository.findByUserId(userId, pageable).map(ProductMapper::toResponse);
+    }
+
+    @Override
+    public ProductResponse updateNotificationFrequency(String id, NotificationFrequency frequency) {
+        if (frequency == null) throw new BadRequestException("notificationFrequency is required");
+        Product existing = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with id '" + id + "' not found"));
+        existing.setNotificationFrequency(frequency);
+        Product saved = repository.save(existing);
+        return ProductMapper.toResponse(saved);
+    }
+
+    @Override
+    public ProductResponse replaceTags(String id, List<String> tags) {
+        Product existing = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with id '" + id + "' not found"));
+        existing.setTags(tags == null || tags.isEmpty() ? null : List.copyOf(tags));
+        Product saved = repository.save(existing);
+        return ProductMapper.toResponse(saved);
+    }
+
+    @Override
+    public ProductResponse addTags(String id, List<String> tags) {
+        if (tags == null || tags.isEmpty()) throw new BadRequestException("tags are required");
+        Product existing = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with id '" + id + "' not found"));
+        Set<String> set = new HashSet<>();
+        if (existing.getTags() != null) set.addAll(existing.getTags());
+        for (String t : tags) if (t != null && !t.isBlank()) set.add(t.trim());
+        existing.setTags(set.isEmpty() ? null : new ArrayList<>(set));
+        Product saved = repository.save(existing);
+        return ProductMapper.toResponse(saved);
+    }
+
+    @Override
+    public ProductResponse removeTags(String id, List<String> tags) {
+        if (tags == null || tags.isEmpty()) throw new BadRequestException("tags are required");
+        Product existing = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with id '" + id + "' not found"));
+        if (existing.getTags() == null || existing.getTags().isEmpty()) return ProductMapper.toResponse(existing);
+        Set<String> set = new HashSet<>(existing.getTags());
+        for (String t : tags) if (t != null && !t.isBlank()) set.remove(t.trim());
+        existing.setTags(set.isEmpty() ? null : new ArrayList<>(set));
+        Product saved = repository.save(existing);
+        return ProductMapper.toResponse(saved);
     }
 
     private void validateRequest(ProductRequest request) {

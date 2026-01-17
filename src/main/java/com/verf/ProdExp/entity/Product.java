@@ -8,6 +8,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 
 
 @Document("products")
@@ -37,9 +38,12 @@ public class Product {
 
     private Status status;
 
+    private NotificationFrequency notificationFrequency;
+
+    private List<String> tags;
+
     @CreatedDate
     private Instant createdAt;
     @LastModifiedDate
     private Instant updatedAt;
 }
-

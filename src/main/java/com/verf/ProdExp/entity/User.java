@@ -24,19 +24,17 @@ public class User {
     @NonNull
     private String email;
 
-    /**
-     * Stored encoded (bcrypt) password
-     */
     @NonNull
     private String password;
 
-    /**
-     * Roles like "ROLE_USER", "ROLE_ADMIN" or without prefix "USER"/"ADMIN" depending on mapping
-     */
+
     @NonNull
     private Set<String> roles;
 
     private boolean enabled = true;
+
+    @Builder.Default
+    private String displayName = "User";
 
     @CreatedDate
     private Instant createdAt;
@@ -44,4 +42,3 @@ public class User {
     @LastModifiedDate
     private Instant updatedAt;
 }
-

@@ -6,10 +6,10 @@ import com.verf.ProdExp.dto.QuantityConsumedUpdateRequest;
 import com.verf.ProdExp.entity.NotificationFrequency;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.Map;
 
 public interface ProductService {
     ProductResponse create(ProductRequest request);
@@ -36,4 +36,5 @@ public interface ProductService {
     // Remove tags if present
     ProductResponse removeTags(String id, List<String> tags);
 
+    Map<String, Object> AnalyzeById(String id);
 }

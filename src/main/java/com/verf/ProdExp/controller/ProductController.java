@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.net.URI;
+import java.util.Map;
 import java.util.Set;
 
 @RestController
@@ -88,6 +89,12 @@ public class ProductController {
     @PreAuthorize("hasRole('ADMIN') or @securityService.isProductOwner(#id)")
     public ResponseEntity<ProductResponse> getById(@PathVariable String id) {
         return ResponseEntity.ok(productService.getById(id));
+    }
+
+    @GetMapping("/analyze/{id}")
+    @PreAuthorize("hasRole('ADMIN') or @securityService.isProductOwner(#id)")
+    public ResponseEntity<Map<String, Object>> AnalyzeById(@PathVariable String id) {
+        return ResponseEntity.ok(productService.AnalyzeById(id));
     }
 
     @GetMapping("/user/{userId}")

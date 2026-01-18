@@ -1,7 +1,6 @@
 package com.verf.ProdExp.controller;
 
-import com.verf.ProdExp.dto.UpdateUserRequest;
-import com.verf.ProdExp.dto.UserResponse;
+import com.verf.ProdExp.dto.*;
 import com.verf.ProdExp.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -37,5 +36,24 @@ public class UserController {
         userService.delete(id);
         return ResponseEntity.noContent().build();
     }
-}
 
+    @PatchMapping("/{id}/email")
+    @PreAuthorize("hasRole('ADMIN') or @securityService.isUserMatching(#id)")
+    public ResponseEntity<UserResponse> updateEmail(@PathVariable String id, @Valid @RequestBody UpdateEmailRequest req) {
+        return ResponseEntity.ok(userService.updateEmail(id, req));
+    }
+
+    @PatchMapping("/{id}/password")
+    @PreAuthorize("hasRole('ADMIN') or @securityService.isUserMatching(#id)")
+    public ResponseEntity<Void> updatePassword(@PathVariable String id, @Valid @RequestBody UpdatePasswordRequest req) {
+        // For security, do not return the user object after password change
+        userService.updatePassword(id, req);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/displayName")
+    @PreAuthorize("hasRole('ADMIN') or @securityService.isUserMatching(#id)")
+    public ResponseEntity<UserResponse> updateDisplayName(@PathVariable String id, @Valid @RequestBody UpdateDisplayNameRequest req) {
+        return ResponseEntity.ok(userService.updateDisplayName(id, req));
+    }
+}

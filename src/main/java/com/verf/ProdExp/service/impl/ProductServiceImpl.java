@@ -10,15 +10,14 @@ import com.verf.ProdExp.exception.ResourceNotFoundException;
 import com.verf.ProdExp.mapper.ProductMapper;
 import com.verf.ProdExp.repository.ProductRepository;
 import com.verf.ProdExp.service.ProductService;
+import com.verf.ProdExp.util.AnalysisUtil;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,6 +41,13 @@ public class ProductServiceImpl implements ProductService {
         Product p = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with id '" + id + "' not found"));
         return ProductMapper.toResponse(p);
+    }
+
+    @Override
+    public Map<String, Object> AnalyzeById(String id) {
+        Product p = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with id '" + id + "' not found"));
+        return AnalysisUtil.analyze(p);
     }
 
     @Override

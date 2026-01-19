@@ -53,10 +53,8 @@ public class ProductMapper {
         boolean finished = bought > 0.0 && Double.compare(consumed, bought) >= 0;
         boolean expired = p.getExpirationDate().isBefore(LocalDate.now());
 
-        if (finished && expired) return Status.EXPIRED_AND_FINISHED;
         if (finished) return Status.FINISHED;
-        if (expired) return Status.EXPIRED;
-        // use AVAILABLE as the neutral state (neither finished nor expired)
+        else if (expired) return Status.EXPIRED;
         return Status.AVAILABLE;
     }
 }

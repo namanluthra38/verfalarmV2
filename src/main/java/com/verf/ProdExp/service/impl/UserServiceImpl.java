@@ -1,8 +1,6 @@
 package com.verf.ProdExp.service.impl;
 
-import com.verf.ProdExp.dto.RegisterRequest;
-import com.verf.ProdExp.dto.UpdateUserRequest;
-import com.verf.ProdExp.dto.UserResponse;
+import com.verf.ProdExp.dto.*;
 import com.verf.ProdExp.entity.User;
 import com.verf.ProdExp.exception.BadRequestException;
 import com.verf.ProdExp.exception.ResourceNotFoundException;
@@ -74,5 +72,20 @@ public class UserServiceImpl implements UserService {
     public void delete(String id) {
         if (!userRepository.existsById(id)) throw new ResourceNotFoundException("User not found");
         userRepository.deleteById(id);
+    }
+
+    @Override
+    public UserResponse updateEmail(String id, UpdateEmailRequest request) {
+        return null;
+    }
+
+    @Override
+    public void updatePassword(String id, UpdatePasswordRequest request) {
+
+    }
+
+    @Override
+    public UserResponse updateDisplayName(String id, UpdateDisplayNameRequest request) {
+        return null;
     }
 }

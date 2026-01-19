@@ -96,7 +96,7 @@ public class AnalysisUtil {
         // Current average consumption per day
         Double currentAvgDailyConsumption = null;
         if (purchaseDate != null) {
-            long daysSincePurchase = ChronoUnit.DAYS.between(purchaseDate, now);
+            long daysSincePurchase = ChronoUnit.DAYS.between(purchaseDate, now) + 1;
             if (daysSincePurchase <= 0) {
                 // If purchased today, we can't compute average yet
                 warnings.add("purchaseDate is today or in the future; average daily consumption is unavailable");
@@ -144,8 +144,6 @@ public class AnalysisUtil {
         Status suggested;
         if (remaining <= 0d && (expirationDate == null || !isExpired)) {
             suggested = Status.FINISHED;
-        } else if (remaining <= 0d && isExpired) {
-            suggested = Status.EXPIRED_AND_FINISHED;
         } else if (isExpired) {
             suggested = Status.EXPIRED;
         } else {

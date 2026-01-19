@@ -7,7 +7,9 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-  const remainingQty = product.quantityBought - product.quantityConsumed;
+  const remainingQty = Number(
+      (product.quantityBought - product.quantityConsumed).toFixed(2)
+  );
   const percentageConsumed = (product.quantityConsumed / product.quantityBought) * 100;
 
   const daysUntilExpiration = Math.ceil(

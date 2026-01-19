@@ -61,8 +61,7 @@ export interface ProductResponse {
 export type ProductStatus =
     | 'AVAILABLE'
     | 'FINISHED'
-    | 'EXPIRED'
-    | 'EXPIRED_AND_FINISHED';
+    | 'EXPIRED';
 
 export interface ProductAnalysis {
   remainingQuantity: number;

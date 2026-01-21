@@ -8,13 +8,15 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.Set;
 
 @Document("users")
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Getter
+@Setter
 public class User {
 
     @Id
@@ -41,4 +43,28 @@ public class User {
 
     @LastModifiedDate
     private Instant updatedAt;
+
+    @Builder.Default
+    private boolean emailVerified = false;
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "email='" + email + '\'' +
+                ", roles=" + roles +
+                ", displayName='" + displayName + '\'' +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        User user = (User) o;
+        return Objects.equals(email, user.email);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(email);
+    }
 }

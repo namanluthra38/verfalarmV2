@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
@@ -23,8 +24,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.net.URI;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/products")
@@ -38,8 +38,9 @@ public class ProductController {
 
     // allowed sortable fields — keep in sync with Product entity/dto fields
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
-            "id", "userId", "name", "quantityBought", "quantityConsumed", "unit",
-            "purchaseDate", "expirationDate", "createdAt", "updatedAt", "status", "notificationFrequency"
+            "name",
+            "purchaseDate", "expirationDate", "createdAt",
+            "percentageLeft" // computed: (bought - consumed)/bought * 100
     );
 
     private String getAuthenticatedUserId() {
@@ -100,15 +101,46 @@ public class ProductController {
     @GetMapping("/user/{userId}")
     @PreAuthorize("hasRole('ADMIN') or @securityService.isUserMatching(#userId)")
     public ResponseEntity<Page<ProductResponse>> getByUser(@PathVariable String userId,
-                                                             @RequestParam(required = false, defaultValue = "0") int pageNumber,
-                                                             @RequestParam(required = false, defaultValue = "10") int pageSize,
-                                                             @RequestParam(required = false, defaultValue = "name") String sortBy,
-                                                             @RequestParam(required = false, defaultValue = "asc") String sortDirection) {
+                                                           @RequestParam(required = false, defaultValue = "0") int pageNumber,
+                                                           @RequestParam(required = false, defaultValue = "10") int pageSize,
+                                                           @RequestParam(required = false, defaultValue = "name") String sortBy,
+                                                           @RequestParam(required = false, defaultValue = "asc") String sortDirection) {
         if (pageNumber < 0) throw new BadRequestException("pageNumber must be >= 0");
         if (pageSize <= 0) throw new BadRequestException("pageSize must be > 0");
 
         if (!ALLOWED_SORT_FIELDS.contains(sortBy)) {
             throw new BadRequestException("Invalid sortBy field: " + sortBy + ". Allowed: " + ALLOWED_SORT_FIELDS);
+        }
+
+        // special-case computed field: percentageLeft
+        if ("percentageLeft".equals(sortBy)) {
+            // Fetch ALL products for this user
+            PageRequest fetchAll = PageRequest.of(0, Integer.MAX_VALUE);
+            Page<ProductResponse> allProducts = productService.getByUser(fetchAll, userId);
+
+            // Sort all products by percentage
+            List<ProductResponse> allSorted = new ArrayList<>(allProducts.getContent());
+            allSorted.sort(Comparator.comparingDouble(p -> {
+                Double bought = p.quantityBought() == null ? 0.0 : p.quantityBought().doubleValue();
+                Double consumed = p.quantityConsumed() == null ? 0.0 : p.quantityConsumed().doubleValue();
+                if (bought == 0.0) return 0.0;
+                return ((bought - consumed) / bought) * 100.0;
+            }));
+
+            if ("desc".equalsIgnoreCase(sortDirection)) {
+                Collections.reverse(allSorted);
+            }
+
+            // Now extract the requested page from the sorted list
+            int start = pageNumber * pageSize;
+            int end = Math.min(start + pageSize, allSorted.size());
+            List<ProductResponse> pageContent = start < allSorted.size()
+                    ? allSorted.subList(start, end)
+                    : Collections.emptyList();
+
+            PageRequest pageable = PageRequest.of(pageNumber, pageSize);
+            Page<ProductResponse> result = new PageImpl<>(pageContent, pageable, allSorted.size());
+            return ResponseEntity.ok(result);
         }
 
         Sort sort = sortDirection.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();

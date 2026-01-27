@@ -19,9 +19,12 @@ export default function Register() {
 
     try {
       await register({ email, password, displayName });
-      navigate('/dashboard');
+      // After registering, direct user to a "check your email" page instead of auto-login
+      navigate('/check-email');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
+      // Attempt to extract useful message
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg || 'Registration failed');
     } finally {
       setLoading(false);
     }

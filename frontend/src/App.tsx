@@ -7,63 +7,72 @@ import Dashboard from './pages/Dashboard';
 import ProductForm from './pages/ProductForm';
 import ProductDetail from './pages/ProductDetail';
 import ProductAnalysisPage from './pages/ProductAnalysis';
+import VerifyEmail from './pages/VerifyEmail';
+import CheckEmail from './pages/CheckEmail';
+import VerifyResult from './pages/VerifyResult';
+import ErrorBoundary from './components/ErrorBoundary';
 
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/verify-success" element={<VerifyResult />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/check-email" element={<CheckEmail />} />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
 
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/products/new"
-            element={
-              <ProtectedRoute>
-                <ProductForm />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/products/new"
+              element={
+                <ProtectedRoute>
+                  <ProductForm />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/products/:id"
-            element={
-              <ProtectedRoute>
-                <ProductDetail />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/products/:id"
+              element={
+                <ProtectedRoute>
+                  <ProductDetail />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/products/:id/edit"
-            element={
-              <ProtectedRoute>
-                <ProductForm />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/products/:id/edit"
+              element={
+                <ProtectedRoute>
+                  <ProductForm />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/products/:id/analysis"
-            element={
-              <ProtectedRoute>
-                <ProductAnalysisPage />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/products/:id/analysis"
+              element={
+                <ProtectedRoute>
+                  <ProductAnalysisPage />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </ErrorBoundary>
       </AuthProvider>
     </BrowserRouter>
   );

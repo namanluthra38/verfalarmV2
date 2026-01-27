@@ -5,6 +5,7 @@ export const API_CONFIG = {
       REGISTER: '/api/auth/register',
       LOGIN: '/api/auth/login',
       ME: '/api/auth/me',
+      VERIFY_EMAIL: '/api/auth/verify',
     },
     USERS: {
       BASE: '/api/users',

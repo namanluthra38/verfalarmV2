@@ -1,12 +1,12 @@
 @baseUrl = http://localhost:8080
 
 # Test users and credentials
-@userEmail = testuser@example.com
+@userEmail = namanluthra70@gmail.com
 @userPassword = secret123
 @adminEmail = admin@example.com
 @adminPassword = admin123
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OTY2NmQ0NzlmNjgxZTYyNGMyOTE0MjQiLCJpYXQiOjE3NjgzMjczMzIsImV4cCI6MTc2ODMzMDkzMn0.JGBneGN03SSGKctlREtmnpCkh1xzoKSSTwZub3ONnBQ
-@userId = 69666d479f681e624c291424
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OTc4NWQzZjkzMzJmYjFmOGM2YzA3NDAiLCJpYXQiOjE3Njk0OTY1NTksImV4cCI6MTc2OTUwMDE1OX0.t0UVhTe67qUz6f_YcxVrhJRwpWiAoYTO1nF4Lg8MVj4
+@userId = 69785d3f9332fb1f8c6c0740
 ### Register a new user
 POST {{baseUrl}}/api/auth/register
 Content-Type: application/json
@@ -79,7 +79,7 @@ Authorization: Bearer {{adminToken}}
 
 ### Admin: delete the user
 DELETE {{baseUrl}}/api/users/{{userId}}
-Authorization: Bearer {{adminToken}}
+Authorization: Bearer {{token}}
 
 
 ### Verify deletion (should return 404)

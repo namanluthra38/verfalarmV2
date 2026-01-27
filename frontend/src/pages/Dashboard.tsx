@@ -5,7 +5,7 @@ import { ProductService } from '../services/product.service';
 import { ProductResponse } from '../types/api.types';
 import Navbar from '../components/Navbar';
 import ProductCard from '../components/ProductCard';
-import { Plus, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, RefreshCw, ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from 'lucide-react';
 
 const PAGE_SIZE = 9;
 
@@ -21,22 +21,122 @@ export default function Dashboard() {
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
 
+  // Sort state (persisted to localStorage)
+  const DEFAULT_SORT_BY = 'expirationDate';
+  const DEFAULT_SORT_DIR = 'asc' as const;
+  const [sortBy, setSortBy] = useState<string>(() => {
+    try { return localStorage.getItem('prod_sortBy') || DEFAULT_SORT_BY; } catch(e) { return DEFAULT_SORT_BY; }
+  });
+  const [sortDirection, setSortDirection] = useState<'asc'|'desc'>(() => {
+    try {
+      const v = localStorage.getItem('prod_sortDir');
+      return v === 'desc' ? 'desc' : DEFAULT_SORT_DIR;
+    } catch (e) {
+      return DEFAULT_SORT_DIR;
+    }
+  });
+
   // prevents stale API responses from overwriting newer ones
   const requestIdRef = useRef(0);
 
-  const fetchProducts = async (page: number) => {
+  // Allowed sort fields (keep in sync with backend)
+  const ALLOWED_SORT_FIELDS = [
+    // match backend ProductController's ALLOWED_SORT_FIELDS
+    'name', 'purchaseDate', 'expirationDate', 'createdAt', 'percentageLeft'
+  ];
+
+  // Friendly labels for the UI
+  const SORT_LABELS: Record<string, string> = {
+    name: 'Name',
+    purchaseDate: 'Purchase date',
+    expirationDate: 'Expiration date',
+    createdAt: 'Tracking Since',
+    percentageLeft: 'Percentage Left'
+  };
+
+  // Ensure any persisted sort key is valid for the current backend whitelist
+  useEffect(() => {
+    try {
+      if (!ALLOWED_SORT_FIELDS.includes(sortBy)) {
+        setSortBy(DEFAULT_SORT_BY);
+        localStorage.setItem('prod_sortBy', DEFAULT_SORT_BY);
+      }
+    } catch (e) {
+      // ignore storage errors
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Utility: local sort (instant), handles numbers, strings and ISO dates
+  const sortProductsLocal = (items: ProductResponse[], field: string, dir: 'asc'|'desc') => {
+    const mul = dir === 'asc' ? 1 : -1;
+    const copy = [...items];
+    copy.sort((a, b) => {
+      const av = (a as any)[field];
+      const bv = (b as any)[field];
+
+      // treat undefined/null as greater so they appear last in asc
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1 * mul;
+      if (bv == null) return -1 * mul;
+
+      // numbers
+      if (typeof av === 'number' && typeof bv === 'number') {
+        return (av - bv) * mul;
+      }
+
+      // try date (ISO strings)
+      const dateA = Date.parse(String(av));
+      const dateB = Date.parse(String(bv));
+      if (!isNaN(dateA) && !isNaN(dateB)) {
+        return (dateA - dateB) * mul;
+      }
+
+      // fallback to string compare
+      return String(av).localeCompare(String(bv)) * mul;
+    });
+    return copy;
+  };
+
+  // Apply sort preference immediately (no server round-trip) and persist preference
+  const applySortPreference = (newSortBy: string, newSortDir: 'asc'|'desc') => {
+    if (!ALLOWED_SORT_FIELDS.includes(newSortBy)) return;
+    setSortBy(newSortBy);
+    setSortDirection(newSortDir);
+    try { localStorage.setItem('prod_sortBy', newSortBy); localStorage.setItem('prod_sortDir', newSortDir); } catch(e) {}
+
+    // If sorting by computed field 'percentageLeft', skip client-side computation
+    // and rely on server-side sorting to avoid mismatches.
+    // if (newSortBy === 'percentageLeft') {
+    //   // trigger background fetch for canonical server-sorted data
+    //   fetchProducts(pageNumber, newSortBy, newSortDir).catch(() => {});
+    //   return;
+    // }
+
+    // instant client-side sort for snappy UX (for regular fields)
+    setProducts(prev => sortProductsLocal(prev, newSortBy, newSortDir));
+
+    // background fetch to get canonical server-sorted data for entire page
+    // keep pageNumber as-is
+    fetchProducts(pageNumber, newSortBy, newSortDir).catch(() => {});
+  };
+
+  const fetchProducts = async (page: number, sortByOverride?: string, sortDirOverride?: 'asc'|'desc') => {
     if (!user || !token) return;
 
     const requestId = ++requestIdRef.current;
     setLoading(true);
     setError('');
 
+    const useSortBy = sortByOverride ?? sortBy;
+    const useSortDirection = sortDirOverride ?? sortDirection;
+
     try {
       const response = await ProductService.getUserProducts(user.id, token, {
         pageNumber: page,
         pageSize: PAGE_SIZE,
-        sortBy: 'expirationDate',
-        sortDirection: 'asc',
+        sortBy: useSortBy,
+        sortDirection: useSortDirection,
       });
 
       if (requestId !== requestIdRef.current) return;
@@ -105,6 +205,16 @@ export default function Dashboard() {
             </div>
 
             <div className="flex gap-3">
+              {/* Sort control - instant client-side sort + background fetch */}
+              <div className="relative">
+                <SortControl
+                  sortBy={sortBy}
+                  sortDir={sortDirection}
+                  onChange={(newBy, newDir) => applySortPreference(newBy, newDir)}
+                  labels={SORT_LABELS}
+                />
+              </div>
+
               <button
                   disabled={loading}
                   onClick={() => fetchProducts(pageNumber)}
@@ -191,5 +301,60 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+  );
+}
+
+
+// --- Inline SortControl component (keeps this file self-contained) ---
+function SortControl({ sortBy, sortDir, onChange, labels }:
+  { sortBy: string, sortDir: 'asc'|'desc', onChange: (b: string, d: 'asc'|'desc') => void, labels: Record<string,string> }) {
+  const [open, setOpen] = useState(false);
+  const toggleOpen = () => setOpen(v => !v);
+  const ref = useRef<HTMLDivElement|null>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    window.addEventListener('click', handler);
+    return () => window.removeEventListener('click', handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="flex items-center gap-2">
+      <button onClick={toggleOpen} className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg border-2 border-emerald-200 hover:bg-gray-50">
+        <span className="font-medium text-emerald-700">Sort</span>
+        <span className="text-sm text-gray-600">{labels[sortBy] || sortBy}</span>
+        <svg className="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9l6 6 6-6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+      </button>
+
+      <div className="flex items-center">
+        <button
+          title="Toggle direction"
+          onClick={() => onChange(sortBy, sortDir === 'asc' ? 'desc' : 'asc')}
+          className="px-3 py-2 rounded-lg bg-white border-2 border-emerald-200 hover:bg-gray-50"
+          aria-label="Toggle sort direction"
+        >
+          {sortDir === 'asc' ? <ChevronUp className="w-4 h-4 text-emerald-700" /> : <ChevronDown className="w-4 h-4 text-emerald-700" />}
+        </button>
+      </div>
+
+      {open && (
+        <div className="absolute right-0 mt-12 w-64 bg-white rounded-lg shadow-lg border border-emerald-100 z-50">
+          <div className="p-3">
+            <h4 className="text-sm font-semibold text-emerald-800 mb-2">Sort by</h4>
+            <div className="max-h-56 overflow-auto">
+              {Object.keys(labels).map((key) => (
+                <button key={key}
+                        onClick={() => { onChange(key, sortDir); setOpen(false); }}
+                        className={`w-full text-left px-3 py-2 rounded-md hover:bg-emerald-50 ${key === sortBy ? 'bg-emerald-50 font-semibold' : ''}`}>
+                  {labels[key]}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

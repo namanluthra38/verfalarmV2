@@ -5,9 +5,12 @@ import com.verf.ProdExp.entity.User;
 import com.verf.ProdExp.exception.BadRequestException;
 import com.verf.ProdExp.exception.ResourceNotFoundException;
 import com.verf.ProdExp.repository.UserRepository;
+import com.verf.ProdExp.repository.ProductRepository;
+import com.verf.ProdExp.service.MailService;
 import com.verf.ProdExp.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.util.Set;
@@ -17,7 +20,9 @@ import java.util.Set;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final ProductRepository productRepository;
     private final PasswordEncoder passwordEncoder;
+    private final MailService mailService;
 
     @Override
     public UserResponse register(RegisterRequest req) {
@@ -35,9 +40,11 @@ public class UserServiceImpl implements UserService {
                 .roles(Set.of("USER"))
                 .enabled(true)
                 .displayName(req.displayName())
+                .emailVerified(true)
                 .build();
 
         User saved = userRepository.save(u);
+        mailService.sendWelcomeEmail(saved);
         return new UserResponse(saved.getId(), saved.getEmail(), saved.getRoles(), saved.isEnabled(), saved.getDisplayName(), saved.getCreatedAt(), saved.getUpdatedAt());
     }
 
@@ -69,8 +76,16 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public void delete(String id) {
         if (!userRepository.existsById(id)) throw new ResourceNotFoundException("User not found");
+
+        try {
+            productRepository.deleteByUserId(id);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to delete user's products", e);
+        }
+
         userRepository.deleteById(id);
     }
 

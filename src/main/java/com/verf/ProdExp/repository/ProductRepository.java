@@ -9,4 +9,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ProductRepository extends MongoRepository<Product, String> {
     Page<Product> findByUserId(String userId, Pageable pageable);
+    void deleteByUserId(String userId);
 }

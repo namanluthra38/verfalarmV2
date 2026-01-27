@@ -29,7 +29,7 @@ public class Product {
     @NonNull
     private Double quantityConsumed;
     @NonNull
-    private String unit;
+    private Unit unit;
 
     @NonNull
     private LocalDate purchaseDate;

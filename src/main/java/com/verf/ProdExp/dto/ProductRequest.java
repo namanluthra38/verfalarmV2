@@ -1,5 +1,6 @@
 package com.verf.ProdExp.dto;
 
+import com.verf.ProdExp.entity.Unit;
 import jakarta.validation.constraints.*;
 
 import java.time.LocalDate;
@@ -11,7 +12,7 @@ public record ProductRequest(
         @NotBlank String name,
         @NotNull @PositiveOrZero Double quantityBought,
         @NotNull @PositiveOrZero Double quantityConsumed,
-        @NotBlank String unit,
+        @NotNull Unit unit,
         @NotNull LocalDate purchaseDate,
         @NotNull LocalDate expirationDate,
         // optional: if omitted, controller/mapper will default to MONTHLY
@@ -23,7 +24,7 @@ public record ProductRequest(
                                     String name,
                                     Double quantityBought,
                                     Double quantityConsumed,
-                                    String unit,
+                                    Unit unit,
                                     LocalDate purchaseDate,
                                     LocalDate expirationDate,
                                     NotificationFrequency notificationFrequency,

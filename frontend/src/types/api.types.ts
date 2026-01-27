@@ -1,3 +1,4 @@
+import { Unit } from './Unit';
 export interface LoginRequest {
   email: string;
   password: string;
@@ -35,7 +36,7 @@ export interface ProductRequest {
   name: string;
   quantityBought: number;
   quantityConsumed: number;
-  unit: string;
+  unit: Unit;
   purchaseDate: string;
   expirationDate: string;
   notificationFrequency?: NotificationFrequency;
@@ -48,7 +49,7 @@ export interface ProductResponse {
   name: string;
   quantityBought: number;
   quantityConsumed: number;
-  unit: string;
+  unit: Unit;
   purchaseDate: string;
   expirationDate: string;
   createdAt: string;

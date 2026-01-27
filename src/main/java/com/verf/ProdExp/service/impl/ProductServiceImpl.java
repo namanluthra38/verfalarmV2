@@ -171,7 +171,7 @@ public class ProductServiceImpl implements ProductService {
 
         if (isBlank(request.userId())) throw new BadRequestException("userId is required");
         if (isBlank(request.name())) throw new BadRequestException("name is required");
-        if (isBlank(request.unit())) throw new BadRequestException("unit is required");
+        if (isBlank(String.valueOf(request.unit()))) throw new BadRequestException("unit is required");
 
         if (request.quantityBought() == null || request.quantityBought() < 0)
             throw new BadRequestException("quantityBought must be non-negative");

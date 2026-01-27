@@ -1,0 +1,15 @@
+export enum Unit {
+    PIECES = "pcs",
+    GRAM = "g",
+    KILOGRAM = "kg",
+    LITER = "l",
+    MILLILITER = "ml",
+    OUNCE = "oz",
+    POUND = "lb",
+    CUP = "cup",
+    QUART = "qt",
+    GALLON = "gal",
+    BOTTLE = "bottle",
+    BOX = "box",
+    PACK = "pack",
+}

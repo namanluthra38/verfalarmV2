@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.util.List;
 import com.verf.ProdExp.entity.Status;
 import com.verf.ProdExp.entity.NotificationFrequency;
+import com.verf.ProdExp.entity.Unit;
 
 public record ProductResponse(
         String id,
@@ -12,7 +13,7 @@ public record ProductResponse(
         String name,
         Double quantityBought,
         Double quantityConsumed,
-        String unit,
+        Unit unit,
         LocalDate purchaseDate,
         LocalDate expirationDate,
         Instant createdAt,

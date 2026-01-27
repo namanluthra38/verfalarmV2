@@ -174,7 +174,7 @@ export default function ProductForm() {
                   Unit *
                 </label>
 
-                <div className="flex flex-wrap gap-2 mb-3">
+                <div className="flex flex-wrap gap-3">
                   {unitOptions.map((u) => {
                     const isSelected = formData.unit === u;
                     return (
@@ -182,10 +182,10 @@ export default function ProductForm() {
                             key={u}
                             type="button"
                             onClick={() => setFormData({ ...formData, unit: u })}
-                            className={`px-3 py-1 rounded-full text-sm font-semibold border transition ${
+                            className={`px-4 py-2.5 rounded-lg text-sm font-semibold border-2 transition-all duration-200 ${
                                 isSelected
-                                    ? 'bg-emerald-600 text-white border-emerald-600'
-                                    : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
+                                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-200 scale-105'
+                                    : 'bg-white text-gray-700 border-gray-300 hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700'
                             }`}
                         >
                           {u}
@@ -193,18 +193,6 @@ export default function ProductForm() {
                     );
                   })}
                 </div>
-
-                <select
-                    value={formData.unit}
-                    onChange={(e) => setFormData({ ...formData, unit: e.target.value as Unit })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
-                >
-                  {unitOptions.map((u) => (
-                      <option key={u} value={u}>
-                        {u}
-                      </option>
-                  ))}
-                </select>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -11,6 +11,7 @@ import com.verf.ProdExp.mapper.ProductMapper;
 import com.verf.ProdExp.repository.ProductRepository;
 import com.verf.ProdExp.service.ProductService;
 import com.verf.ProdExp.util.AnalysisUtil;
+import com.verf.ProdExp.util.NotificationFrequencyCalculator;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
@@ -72,8 +73,10 @@ public class ProductServiceImpl implements ProductService {
         existing.setUnit(request.unit());
         existing.setPurchaseDate(request.purchaseDate());
         existing.setExpirationDate(request.expirationDate());
-        // copy notificationFrequency (default to MONTHLY when client omits)
-        existing.setNotificationFrequency(request.notificationFrequency() == null ? NotificationFrequency.MONTHLY : request.notificationFrequency());
+        // compute notificationFrequency using utility (do not rely on client)
+        existing.setNotificationFrequency(NotificationFrequencyCalculator.calculate(
+                request.purchaseDate(), request.expirationDate(), request.quantityBought(), request.quantityConsumed()
+        ));
         // copy tags (allow null or empty -> set null if empty to avoid storing empty arrays unnecessarily)
         existing.setTags(request.tags() == null || request.tags().isEmpty() ? null : List.copyOf(request.tags()));
 

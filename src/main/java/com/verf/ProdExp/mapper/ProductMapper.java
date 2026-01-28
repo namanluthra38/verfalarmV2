@@ -5,6 +5,7 @@ import com.verf.ProdExp.dto.ProductResponse;
 import com.verf.ProdExp.entity.Product;
 import com.verf.ProdExp.entity.Status;
 import com.verf.ProdExp.entity.NotificationFrequency;
+import com.verf.ProdExp.util.NotificationFrequencyCalculator;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -12,6 +13,10 @@ import java.util.List;
 public class ProductMapper {
 
     public static Product toEntity(ProductRequest req) {
+        NotificationFrequency freq = NotificationFrequencyCalculator.calculate(
+                req.purchaseDate(), req.expirationDate(), req.quantityBought(), req.quantityConsumed()
+        );
+
         return Product.builder()
                 .id(null)
                 .userId(req.userId())
@@ -21,7 +26,7 @@ public class ProductMapper {
                 .unit(req.unit())
                 .purchaseDate(req.purchaseDate())
                 .expirationDate(req.expirationDate())
-                .notificationFrequency(req.notificationFrequency() == null ? NotificationFrequency.MONTHLY : req.notificationFrequency())
+                .notificationFrequency(freq)
                 .tags(req.tags() == null || req.tags().isEmpty() ? null : List.copyOf(req.tags()))
                 .createdAt(null)
                 .updatedAt(null)

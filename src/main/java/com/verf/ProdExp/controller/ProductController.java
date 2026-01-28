@@ -78,7 +78,6 @@ public class ProductController {
                 request.unit(),
                 request.purchaseDate(),
                 request.expirationDate(),
-                request.notificationFrequency() == null ? NotificationFrequency.MONTHLY : request.notificationFrequency(),
                 request.tags()
         );
         log.debug("Creating product for userId={} name={}", currentUserId, request.name());
@@ -161,7 +160,6 @@ public class ProductController {
                 request.unit(),
                 request.purchaseDate(),
                 request.expirationDate(),
-                request.notificationFrequency() == null ? com.verf.ProdExp.entity.NotificationFrequency.MONTHLY : request.notificationFrequency(),
                 request.tags()
         );
         return ResponseEntity.ok(productService.update(id, toUpdate));

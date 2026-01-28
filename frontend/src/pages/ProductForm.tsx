@@ -2,7 +2,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { ProductService } from '../services/product.service';
-import { NotificationFrequency, ProductRequest } from '../types/api.types';
+import { ProductRequest } from '../types/api.types';
 import Navbar from '../components/Navbar';
 import { Save, ArrowLeft, X, Plus } from 'lucide-react';
 import { Unit } from '../types/Unit';
@@ -20,7 +20,6 @@ export default function ProductForm() {
     unit: Unit.PIECES,
     purchaseDate: new Date().toISOString().split('T')[0],
     expirationDate: '',
-    notificationFrequency: 'WEEKLY',
     tags: [],
   });
 
@@ -46,7 +45,6 @@ export default function ProductForm() {
         unit: (product.unit as unknown) as Unit,
         purchaseDate: product.purchaseDate,
         expirationDate: product.expirationDate,
-        notificationFrequency: product.notificationFrequency,
         tags: product.tags || [],
       });
     } catch (err) {
@@ -225,26 +223,6 @@ export default function ProductForm() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Notification Frequency
-                </label>
-                <select
-                    value={formData.notificationFrequency}
-                    onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          notificationFrequency: e.target.value as NotificationFrequency,
-                        })
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
-                >
-                  <option value="DAILY">Daily</option>
-                  <option value="WEEKLY">Weekly</option>
-                  <option value="MONTHLY">Monthly</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Tags
                 </label>
                 <div className="flex gap-2 mb-3">
@@ -252,7 +230,7 @@ export default function ProductForm() {
                       type="text"
                       value={tagInput}
                       onChange={(e) => setTagInput(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddTag(); } }}
                       className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
                       placeholder="Add a tag"
                   />

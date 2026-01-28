@@ -11,6 +11,7 @@ import VerifyEmail from './pages/VerifyEmail';
 import CheckEmail from './pages/CheckEmail';
 import VerifyResult from './pages/VerifyResult';
 import ErrorBoundary from './components/ErrorBoundary';
+import Profile from './pages/Profile';
 
 function App() {
   return (
@@ -66,6 +67,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <ProductAnalysisPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
                 </ProtectedRoute>
               }
             />

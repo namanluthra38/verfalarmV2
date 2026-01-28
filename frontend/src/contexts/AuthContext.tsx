@@ -10,6 +10,7 @@ interface AuthContextType {
   register: (data: RegisterRequest) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -95,6 +96,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setToken(null);
   };
 
+  const refreshUser = async () => {
+    const savedToken = AuthService.getToken();
+    if (!savedToken) return;
+    try {
+      const currentUser = await AuthService.getCurrentUser(savedToken);
+      setUser(currentUser);
+      setToken(savedToken);
+    } catch (err) {
+      AuthService.removeToken();
+      setUser(null);
+      setToken(null);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -105,6 +120,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         register,
         logout,
         isAuthenticated: !!user && !!token,
+        refreshUser,
       }}
     >
       {children}

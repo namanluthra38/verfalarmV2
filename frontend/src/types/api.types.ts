@@ -120,3 +120,12 @@ export interface PageableResponse<T> {
   number: number;
   numberOfElements: number;
 }
+
+export interface UpdateDisplayNameRequest {
+  displayName: string;
+}
+
+export interface UpdatePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}

@@ -96,11 +96,34 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void updatePassword(String id, UpdatePasswordRequest request) {
+        if (request == null) throw new BadRequestException("Request body is required");
+        if (request.currentPassword() == null || request.currentPassword().isBlank()) throw new BadRequestException("currentPassword is required");
+        if (request.newPassword() == null || request.newPassword().length() < 6) throw new BadRequestException("newPassword must be at least 6 characters");
 
+        User existing = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        // verify current password matches stored one
+        if (!passwordEncoder.matches(request.currentPassword(), existing.getPassword())) {
+            throw new BadRequestException("currentPassword is incorrect");
+        }
+
+        // don't allow setting same password
+        if (passwordEncoder.matches(request.newPassword(), existing.getPassword())) {
+            throw new BadRequestException("newPassword must be different from current password");
+        }
+
+        existing.setPassword(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(existing);
     }
 
     @Override
     public UserResponse updateDisplayName(String id, UpdateDisplayNameRequest request) {
-        return null;
+        if (request == null) throw new BadRequestException("Request body is required");
+        if (request.displayName() == null || request.displayName().isBlank()) throw new BadRequestException("displayName is required");
+
+        User existing = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        existing.setDisplayName(request.displayName());
+        User saved = userRepository.save(existing);
+        return new UserResponse(saved.getId(), saved.getEmail(), saved.getRoles(), saved.isEnabled(), saved.getDisplayName(), saved.getCreatedAt(), saved.getUpdatedAt());
     }
 }

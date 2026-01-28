@@ -24,11 +24,11 @@ public class UserController {
         return ResponseEntity.ok(userService.getById(id));
     }
 
-    @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or @securityService.isUserMatching(#id)")
-    public ResponseEntity<UserResponse> update(@PathVariable String id, @Valid @RequestBody UpdateUserRequest req) {
-        return ResponseEntity.ok(userService.update(id, req));
-    }
+//    @PutMapping("/{id}")
+//    @PreAuthorize("hasRole('ADMIN') or @securityService.isUserMatching(#id)")
+//    public ResponseEntity<UserResponse> update(@PathVariable String id, @Valid @RequestBody UpdateUserRequest req) {
+//        return ResponseEntity.ok(userService.update(id, req));
+//    }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or @securityService.isUserMatching(#id)")

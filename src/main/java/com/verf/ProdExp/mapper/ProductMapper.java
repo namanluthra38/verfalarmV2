@@ -34,6 +34,7 @@ public class ProductMapper {
     }
 
     public static ProductResponse toResponse(Product p) {
+
         return new ProductResponse(
                 p.getId(),
                 p.getUserId(),
@@ -56,7 +57,7 @@ public class ProductMapper {
         double bought = p.getQuantityBought();
         double consumed = p.getQuantityConsumed();
         boolean finished = bought > 0.0 && Double.compare(consumed, bought) >= 0;
-        boolean expired = p.getExpirationDate().isBefore(LocalDate.now());
+        boolean expired = p.getExpirationDate().isBefore(LocalDate.now()) || p.getExpirationDate().isEqual(LocalDate.now());
 
         if (finished) return Status.FINISHED;
         else if (expired) return Status.EXPIRED;

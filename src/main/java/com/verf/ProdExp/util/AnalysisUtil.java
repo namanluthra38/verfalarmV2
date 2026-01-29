@@ -142,7 +142,7 @@ public class AnalysisUtil {
 
         // Status suggestion using Status enum logic
         Status suggested;
-        if (remaining <= 0d && (expirationDate == null || !isExpired)) {
+        if (remaining <= 0d) {
             suggested = Status.FINISHED;
         } else if (isExpired) {
             suggested = Status.EXPIRED;

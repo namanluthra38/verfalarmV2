@@ -1,38 +1,49 @@
 import { Link } from 'react-router-dom';
 import { ProductResponse } from '../types/api.types';
-import { Calendar, Package, TrendingDown, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { Calendar, Package, TrendingDown, CircleDotIcon, XCircle, CheckCircleIcon } from 'lucide-react';
 
 interface ProductCardProps {
   product: ProductResponse;
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-  const remainingQty = Number(
-      (product.quantityBought - product.quantityConsumed).toFixed(2)
-  );
-  const percentageConsumed = (product.quantityConsumed / product.quantityBought) * 100;
+  // Safe numeric values (avoid runtime errors if backend returns null/undefined)
+  const bought = Number(product.quantityBought ?? 0);
+  const consumed = Number(product.quantityConsumed ?? 0);
+  const remainingQty = Number((bought - consumed).toFixed(2));
+  const percentageConsumed = bought > 0 ? (consumed / bought) * 100 : 0;
 
-  const daysUntilExpiration = Math.ceil(
-    (new Date(product.expirationDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-  );
+  const daysUntilExpiration = product.expirationDate ? Math.ceil((new Date(product.expirationDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+
+  // Use backend-provided status as source of truth; fallback to computing from dates/quantities if missing
+  const status = product.status ?? ( (bought > 0 && consumed >= bought) ? 'FINISHED' : (daysUntilExpiration != null && daysUntilExpiration < 0) ? 'EXPIRED' : 'AVAILABLE');
 
   const getStatusColor = () => {
-    if (daysUntilExpiration <= 0) return 'bg-red-100 border-red-300 text-red-800';
-    if (daysUntilExpiration <= 3) return 'bg-orange-100 border-orange-300 text-orange-800';
-    return 'bg-emerald-100 border-emerald-300 text-emerald-800';
+    switch (status) {
+      case 'FINISHED': return 'bg-blue-100 border-blue-300 text-blue-800';
+      case 'EXPIRED': return 'bg-red-100 border-red-300 text-red-800';
+      case 'AVAILABLE': default: return 'bg-emerald-100 border-emerald-300 text-emerald-800';
+    }
   };
 
   const getStatusIcon = () => {
-    if (daysUntilExpiration <= 0) return <XCircle className="w-5 h-5" />;
-    if (daysUntilExpiration <= 3) return <AlertCircle className="w-5 h-5" />;
-    return <CheckCircle className="w-5 h-5" />;
+    switch (status) {
+      case 'FINISHED': return <CheckCircleIcon className="w-5 h-5" />; // finished icon
+      case 'EXPIRED': return <XCircle className="w-5 h-5" />;
+      case 'AVAILABLE': default: return <CircleDotIcon className="w-5 h-5" />;
+    }
   };
 
   const getStatusText = () => {
-    if (daysUntilExpiration <= 0) return 'Expired';
-    if (daysUntilExpiration === 1) return 'Expires Tomorrow';
-    if (daysUntilExpiration <= 3) return `${daysUntilExpiration} Days Left`;
-    return `${daysUntilExpiration} Days Left`;
+    switch (status) {
+      case 'FINISHED': return 'Finished';
+      case 'EXPIRED': return 'Expired';
+      case 'AVAILABLE': default:
+        if (daysUntilExpiration == null) return 'Available';
+        if (daysUntilExpiration === 1) return 'Expires Tomorrow';
+        if (daysUntilExpiration > 1) return `${daysUntilExpiration} Days Left`;
+        return 'Available';
+    }
   };
 
   return (

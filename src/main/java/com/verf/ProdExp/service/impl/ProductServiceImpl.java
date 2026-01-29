@@ -5,6 +5,7 @@ import com.verf.ProdExp.dto.ProductResponse;
 import com.verf.ProdExp.dto.QuantityConsumedUpdateRequest;
 import com.verf.ProdExp.entity.Product;
 import com.verf.ProdExp.entity.NotificationFrequency;
+import com.verf.ProdExp.entity.Status;
 import com.verf.ProdExp.exception.BadRequestException;
 import com.verf.ProdExp.exception.ResourceNotFoundException;
 import com.verf.ProdExp.mapper.ProductMapper;
@@ -125,6 +126,20 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    public Page<ProductResponse> getByUser(Pageable pageable, String userId, @Nullable List<Status> statuses, @Nullable List<NotificationFrequency> frequencies) {
+        if (userId == null || userId.trim().isEmpty()) {
+            throw new BadRequestException("userId is required");
+        }
+
+        // if no filters provided, delegate to existing method
+        if ((statuses == null || statuses.isEmpty()) && (frequencies == null || frequencies.isEmpty())) {
+            return getByUser(pageable, userId);
+        }
+
+        return repository.findByUserIdWithFilters(userId, statuses, frequencies, pageable).map(ProductMapper::toResponse);
+    }
+
+    @Override
     public ProductResponse updateNotificationFrequency(String id, NotificationFrequency frequency) {
         if (frequency == null) throw new BadRequestException("notificationFrequency is required");
         Product existing = repository.findById(id)
@@ -167,6 +182,30 @@ public class ProductServiceImpl implements ProductService {
         existing.setTags(set.isEmpty() ? null : new ArrayList<>(set));
         Product saved = repository.save(existing);
         return ProductMapper.toResponse(saved);
+    }
+
+    @Override
+    public int recomputeStatusesForUser(String userId) {
+        if (userId == null || userId.trim().isEmpty()) {
+            throw new BadRequestException("userId is required");
+        }
+
+        // fetch all products for user
+        List<Product> products = repository.findAllByUserId(userId);
+        int changed = 0;
+        List<Product> toSave = new ArrayList<>();
+        for (Product p : products) {
+            Status computed = ProductMapper.computeStatus(p);
+            if (p.getStatus() != computed) {
+                p.setStatus(computed);
+                toSave.add(p);
+            }
+        }
+        if (!toSave.isEmpty()) {
+            repository.saveAll(toSave);
+            changed = toSave.size();
+        }
+        return changed;
     }
 
     private void validateRequest(ProductRequest request) {

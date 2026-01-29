@@ -36,6 +36,15 @@ export default function Dashboard() {
     }
   });
 
+  // Filter state (persisted to localStorage)
+  const FILTER_KEY = 'prod_filters_v1';
+  const [filterStatuses, setFilterStatuses] = useState<string[]>(() => {
+    try { const raw = localStorage.getItem(FILTER_KEY); if (!raw) return []; const parsed = JSON.parse(raw); return parsed.statuses || []; } catch(e) { return []; }
+  });
+  const [filterNotificationFreqs, setFilterNotificationFreqs] = useState<string[]>(() => {
+    try { const raw = localStorage.getItem(FILTER_KEY); if (!raw) return []; const parsed = JSON.parse(raw); return parsed.notificationFrequencies || []; } catch(e) { return []; }
+  });
+
   // prevents stale API responses from overwriting newer ones
   const requestIdRef = useRef(0);
 
@@ -66,6 +75,10 @@ export default function Dashboard() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const persistFilters = (statuses: string[], freqs: string[]) => {
+    try { localStorage.setItem(FILTER_KEY, JSON.stringify({ statuses, notificationFrequencies: freqs })); } catch(e) {}
+  };
 
   // Utility: local sort (instant), handles numbers, strings and ISO dates
   const sortProductsLocal = (items: ProductResponse[], field: string, dir: 'asc'|'desc') => {
@@ -105,13 +118,7 @@ export default function Dashboard() {
     setSortDirection(newSortDir);
     try { localStorage.setItem('prod_sortBy', newSortBy); localStorage.setItem('prod_sortDir', newSortDir); } catch(e) {}
 
-    // If sorting by computed field 'percentageLeft', skip client-side computation
-    // and rely on server-side sorting to avoid mismatches.
-    // if (newSortBy === 'percentageLeft') {
-    //   // trigger background fetch for canonical server-sorted data
-    //   fetchProducts(pageNumber, newSortBy, newSortDir).catch(() => {});
-    //   return;
-    // }
+
 
     // instant client-side sort for snappy UX (for regular fields)
     setProducts(prev => sortProductsLocal(prev, newSortBy, newSortDir));
@@ -121,7 +128,7 @@ export default function Dashboard() {
     fetchProducts(pageNumber, newSortBy, newSortDir).catch(() => {});
   };
 
-  const fetchProducts = async (page: number, sortByOverride?: string, sortDirOverride?: 'asc'|'desc') => {
+  const fetchProducts = async (page: number, sortByOverride?: string, sortDirOverride?: 'asc'|'desc', statusesOverride?: string[], nfOverride?: string[]) => {
     if (!user || !token) return;
 
     const requestId = ++requestIdRef.current;
@@ -130,6 +137,8 @@ export default function Dashboard() {
 
     const useSortBy = sortByOverride ?? sortBy;
     const useSortDirection = sortDirOverride ?? sortDirection;
+    const useStatuses = statusesOverride ?? filterStatuses;
+    const useNf = nfOverride ?? filterNotificationFreqs;
 
     try {
       const response = await ProductService.getUserProducts(user.id, token, {
@@ -137,6 +146,8 @@ export default function Dashboard() {
         pageSize: PAGE_SIZE,
         sortBy: useSortBy,
         sortDirection: useSortDirection,
+        statuses: useStatuses.length ? useStatuses : undefined,
+        notificationFrequencies: useNf.length ? useNf : undefined,
       });
 
       if (requestId !== requestIdRef.current) return;
@@ -158,9 +169,34 @@ export default function Dashboard() {
   /* Fetch when dashboard becomes active */
   useEffect(() => {
     if (!authLoading && user && token && location.pathname === '/dashboard') {
-      fetchProducts(0);
+      // First, ask backend to recompute statuses for this user's products to avoid stale statuses.
+      // We don't want to block indefinitely, so run with a small timeout and then fetch products regardless.
+      let didFetch = false;
+      const doRecomputeThenFetch = async () => {
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 3000); // 3s timeout
+
+          try {
+            // pass the abort signal so the request can be cancelled if it takes too long
+            await ProductService.recomputeStatuses(user.id, token, controller.signal);
+          } finally {
+            // always clear the timeout whether the request succeeded, failed or was aborted
+            clearTimeout(timeout);
+          }
+        } catch (e) {
+          // if recompute fails or times out, proceed to fetch products to keep UX responsive
+          // console.warn('recomputeStatuses failed', e);
+        } finally {
+          if (!didFetch) {
+            didFetch = true;
+            fetchProducts(0).catch(() => {});
+          }
+        }
+      };
+
+      doRecomputeThenFetch();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user, token, location.pathname]);
 
   /* Refetch when tab becomes visible again */
@@ -180,7 +216,6 @@ export default function Dashboard() {
 
     document.addEventListener('visibilitychange', onVisibility);
     return () => document.removeEventListener('visibilitychange', onVisibility);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user, token, location.pathname, pageNumber]);
 
   const handlePrevPage = () => {
@@ -212,6 +247,17 @@ export default function Dashboard() {
                   sortDir={sortDirection}
                   onChange={(newBy, newDir) => applySortPreference(newBy, newDir)}
                   labels={SORT_LABELS}
+                />
+              </div>
+              <div className="relative">
+                <FilterControl
+                  statuses={filterStatuses}
+                  notificationFreqs={filterNotificationFreqs}
+                  onChange={(s, f) => {
+                    setFilterStatuses(s); setFilterNotificationFreqs(f); persistFilters(s, f);
+                    // refetch first page with new filters
+                    fetchProducts(0, sortBy, sortDirection, s, f).catch(() => {});
+                  }}
                 />
               </div>
 
@@ -351,6 +397,76 @@ function SortControl({ sortBy, sortDir, onChange, labels }:
                   {labels[key]}
                 </button>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// FilterControl: multi-select dropdown for status and notification frequency
+function FilterControl({ statuses, notificationFreqs, onChange }:
+  { statuses: string[], notificationFreqs: string[], onChange: (s: string[], f: string[]) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement|null>(null);
+  useEffect(() => {
+    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    window.addEventListener('click', handler);
+    return () => window.removeEventListener('click', handler);
+  }, []);
+
+  const STATUS_OPTIONS = ['AVAILABLE','FINISHED','EXPIRED'];
+  const NF_OPTIONS = ['DAILY','WEEKLY','MONTHLY'];
+
+  const toggleOption = (arr: string[], setFn: (s: string[]) => void, val: string) => {
+    const copy = [...arr];
+    const idx = copy.indexOf(val);
+    if (idx === -1) copy.push(val); else copy.splice(idx, 1);
+    setFn(copy);
+  };
+
+  // local temporary state for the dropdown so clicking Apply will commit via onChange
+  const [localStatuses, setLocalStatuses] = useState<string[]>(statuses);
+  const [localNf, setLocalNf] = useState<string[]>(notificationFreqs);
+
+  useEffect(() => setLocalStatuses(statuses), [statuses]);
+  useEffect(() => setLocalNf(notificationFreqs), [notificationFreqs]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button onClick={() => setOpen(v => !v)} className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg border-2 border-emerald-200 hover:bg-gray-50">
+        <span className="font-medium text-emerald-700">Filter</span>
+        <span className="text-sm text-gray-600">{localStatuses.length + localNf.length > 0 ? `${localStatuses.length + localNf.length} active` : 'All'}</span>
+        <svg className="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9l6 6 6-6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+      </button>
+
+      {open && (
+        <div className="absolute right-0 mt-12 w-72 bg-white rounded-lg shadow-lg border border-emerald-100 z-50 p-3">
+          <div>
+            <h4 className="text-sm font-semibold text-emerald-800 mb-2">Status</h4>
+            <div className="flex flex-col gap-1 mb-3">
+              {STATUS_OPTIONS.map(o => (
+                <label key={o} className="inline-flex items-center gap-2">
+                  <input type="checkbox" checked={localStatuses.includes(o)} onChange={() => toggleOption(localStatuses, setLocalStatuses, o)} />
+                  <span className="text-sm">{o}</span>
+                </label>
+              ))}
+            </div>
+
+            <h4 className="text-sm font-semibold text-emerald-800 mb-2">Notification</h4>
+            <div className="flex flex-col gap-1 mb-3">
+              {NF_OPTIONS.map(o => (
+                <label key={o} className="inline-flex items-center gap-2">
+                  <input type="checkbox" checked={localNf.includes(o)} onChange={() => toggleOption(localNf, setLocalNf, o)} />
+                  <span className="text-sm">{o}</span>
+                </label>
+              ))}
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button onClick={() => { setLocalStatuses([]); setLocalNf([]); }} className="px-3 py-1 rounded bg-emerald-50 text-sm">Clear</button>
+              <button onClick={() => { onChange(localStatuses, localNf); setOpen(false); }} className="px-3 py-1 rounded bg-emerald-600 text-white">Apply</button>
             </div>
           </div>
         </div>

@@ -16,6 +16,7 @@ export const API_CONFIG = {
       BY_ID: (id: string) => `/api/products/${id}`,
       ANALYZE: (id: string) => `/api/products/analyze/${id}`,
       BY_USER: (userId: string) => `/api/products/user/${userId}`,
+      RECOMPUTE_BY_USER: (userId: string) => `/api/products/user/${userId}/recompute-statuses`,
       QUANTITY_CONSUMED: (id: string) => `/api/products/${id}/quantity-consumed`,
       NOTIFICATION_FREQUENCY: (id: string) => `/api/products/${id}/notification-frequency`,
       TAGS: (id: string) => `/api/products/${id}/tags`,

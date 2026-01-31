@@ -6,6 +6,7 @@ import { ProductRequest } from '../types/api.types';
 import Navbar from '../components/Navbar';
 import { Save, ArrowLeft, X, Plus, Check, RotateCcw } from 'lucide-react';
 import { Unit } from '../types/Unit';
+import { formatSignificant } from '../utils/format';
 
 export default function ProductForm() {
   const { id } = useParams();
@@ -212,16 +213,16 @@ export default function ProductForm() {
                           {/* Display Text */}
                           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
                           <span className="text-base font-bold text-gray-700">
-                            {formData.quantityConsumed.toFixed(1)} / {formData.quantityBought.toFixed(1)}
-                          </span>
-                          </div>
+                            {formatSignificant(formData.quantityConsumed, 2)} / {formatSignificant(formData.quantityBought, 2)}
+                           </span>
+                           </div>
                         </div>
 
                         {/* Min/Max Labels */}
                         <div className="flex justify-between mt-1 text-xs text-gray-600">
                           <span>0</span>
                           <span className="text-emerald-700 font-semibold">
-                          {consumptionPercentage.toFixed(0)}% consumed
+                          {Math.round(consumptionPercentage)}% consumed
                         </span>
                           <span>{formData.quantityBought.toFixed(1)}</span>
                         </div>

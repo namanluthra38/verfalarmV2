@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ProductResponse } from '../types/api.types';
 import { Calendar, Package, TrendingDown, CircleDotIcon, XCircle, CheckCircleIcon } from 'lucide-react';
+import { formatDateISO, formatSignificant } from '../utils/format';
 
 interface ProductCardProps {
   product: ProductResponse;
@@ -10,7 +11,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   // Safe numeric values (avoid runtime errors if backend returns null/undefined)
   const bought = Number(product.quantityBought ?? 0);
   const consumed = Number(product.quantityConsumed ?? 0);
-  const remainingQty = Number((bought - consumed).toFixed(2));
+  const remainingQty = bought - consumed;
   const percentageConsumed = bought > 0 ? (consumed / bought) * 100 : 0;
 
   const daysUntilExpiration = product.expirationDate ? Math.ceil((new Date(product.expirationDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
@@ -61,7 +62,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           <div className="flex items-center gap-2 text-gray-600">
             <Package className="w-5 h-5 text-emerald-600" />
             <span>
-              {remainingQty} of {product.quantityBought} {product.unit} remaining
+              {formatSignificant(remainingQty, 2)} of {formatSignificant(product.quantityBought ?? 0, 2)} {product.unit} remaining
             </span>
           </div>
 
@@ -72,7 +73,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
           <div className="flex items-center gap-2 text-gray-600">
             <Calendar className="w-5 h-5 text-emerald-600" />
-            <span>Expires {new Date(product.expirationDate).toLocaleDateString()}</span>
+            <span>Expires {formatDateISO(product.expirationDate)}</span>
           </div>
 
           <div className="w-full bg-gray-200 rounded-full h-3 mt-4">

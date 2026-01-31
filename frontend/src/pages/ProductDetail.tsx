@@ -18,8 +18,8 @@ import {
   Clock,
   Target,
   Sparkles,
-  Info,
 } from 'lucide-react';
+import { formatDateISO, formatSignificant, formatPercent } from '../utils/format';
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
@@ -132,8 +132,10 @@ export default function ProductDetail() {
     statusSuggestion,
     recommendedDailyToFinish,
     estimatedFinishDate,
-    warnings,
   } = analysis;
+
+  // Ensure we always show purchaseDate and notification frequency
+  const notificationFrequency = product.notificationFrequency ?? 'MONTHLY';
 
   const statusUI = (() => {
     switch (statusSuggestion) {
@@ -239,7 +241,7 @@ export default function ProductDetail() {
                         <div className="mb-3">
                           <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
                           <p className="text-sm text-gray-500">
-                            Added {new Date(product.createdAt).toLocaleDateString()}
+                            Added {formatDateISO(product.createdAt)}
                           </p>
                         </div>
 
@@ -249,6 +251,20 @@ export default function ProductDetail() {
                           {statusUI.label}
                         </span>
 
+                          {/* Notification frequency tag (display like status) */}
+                          <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200`}>
+                            <Clock className="w-4 h-4" />
+                            {(() => {
+                              const nf = notificationFrequency;
+                              switch (String(nf)) {
+                                case 'DAILY': return 'Daily';
+                                case 'WEEKLY': return 'Weekly';
+                                case 'MONTHLY': return 'Monthly';
+                                default: return String(nf);
+                              }
+                            })()}
+                          </span>
+
                           {daysUntilExpiration !== null && !isExpired && (
                               <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${
                                   urgencyLevel === 'critical'
@@ -257,9 +273,9 @@ export default function ProductDetail() {
                                           ? 'bg-amber-100 text-amber-800 border border-amber-200'
                                           : 'bg-gray-100 text-gray-700 border border-gray-200'
                               }`}>
-                            <Clock className="w-4 h-4" />
+                             <Clock className="w-4 h-4" />
                                 {daysUntilExpiration} days left
-                          </span>
+                           </span>
                           )}
                         </div>
                       </div>
@@ -271,46 +287,28 @@ export default function ProductDetail() {
                     <StatCard
                         icon={TrendingUp}
                         label="Consumed"
-                        value={typeof percentConsumed === 'number' ? `${percentConsumed.toFixed(2)}%` : '—'}
+                        value={formatPercent(percentConsumed, 2)}
+                        hoverValue={`${formatSignificant(product.quantityConsumed ?? 0, 2)} ${product.unit}`}
                         color="emerald"
                     />
                     <StatCard
                         icon={Package}
                         label="Remaining"
-                        value={`${remainingQuantity.toFixed(2)} ${product.unit}`}
+                        value={formatPercent(100 - percentConsumed, 2)}
+                        hoverValue={`${formatSignificant(remainingQuantity, 2)} ${product.unit}`}
                         color="blue"
                     />
                     {product.expirationDate && (
                         <StatCard
                             icon={Calendar}
                             label="Expires"
-                            value={new Date(product.expirationDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            value={formatDateISO(product.expirationDate)}
                             color={urgencyLevel === 'critical' ? 'red' : urgencyLevel === 'warning' ? 'amber' : 'gray'}
                         />
                     )}
                   </div>
                 </div>
               </div>
-
-              {/* Warnings */}
-              {warnings && warnings.length > 0 && (
-                  <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-l-4 border-amber-500 rounded-r-2xl shadow-sm overflow-hidden">
-                    <div className="p-6">
-                      <div className="flex items-center gap-2 mb-4">
-                        <AlertTriangle className="w-5 h-5 text-amber-600" />
-                        <h3 className="font-semibold text-amber-900">Important Notices</h3>
-                      </div>
-                      <div className="space-y-3">
-                        {warnings.map((warning, idx) => (
-                            <div key={idx} className="flex items-start gap-3 bg-white/60 rounded-lg p-3">
-                              <Info className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                              <p className="text-sm text-amber-900">{warning}</p>
-                            </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-              )}
 
               {/* Consumption Tracker */}
               <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
@@ -333,8 +331,8 @@ export default function ProductDetail() {
                       </span>
                       </div>
                       <div className="flex items-baseline justify-between text-sm text-gray-600">
-                        <span>{consumedInput.toFixed(2)} {product.unit} consumed</span>
-                        <span>{remainingQuantity.toFixed(2)} {product.unit} left</span>
+                        <span>{formatSignificant(consumedInput, 2)} {product.unit} consumed</span>
+                        <span>{formatSignificant(remainingQuantity, 2)} {product.unit} left</span>
                       </div>
                     </div>
 
@@ -367,7 +365,7 @@ export default function ProductDetail() {
 
                       <div className="flex justify-between text-xs text-gray-500 mt-2">
                         <span>0 {product.unit}</span>
-                        <span>{maxQuantity.toFixed(2)} {product.unit}</span>
+                        <span>{formatSignificant(maxQuantity, 2)} {product.unit}</span>
                       </div>
                     </div>
 
@@ -415,7 +413,7 @@ export default function ProductDetail() {
                       </p>
                       <div className="bg-white rounded-xl p-5 border-2 border-purple-200 mb-4">
                         <p className="text-4xl font-bold text-purple-700 mb-1">
-                          {recommendedDailyToFinish.toFixed(2)}
+                          {formatSignificant(recommendedDailyToFinish, 2)}
                         </p>
                         <p className="text-sm text-gray-600">{product.unit} per day</p>
                       </div>
@@ -424,7 +422,7 @@ export default function ProductDetail() {
                           <div className="flex items-start gap-2 text-sm text-gray-700 bg-purple-50 rounded-lg p-3">
                             <Calendar className="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />
                             <p>
-                              Expected finish date: <strong>{new Date(estimatedFinishDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</strong>
+                              Expected finish date: <strong>{formatDateISO(estimatedFinishDate)}</strong>
                             </p>
                           </div>
                       )}
@@ -480,22 +478,19 @@ export default function ProductDetail() {
                         <div className="flex justify-between py-2 border-b border-gray-100">
                           <dt className="text-gray-600">Expiration Date</dt>
                           <dd className="font-semibold text-gray-900">
-                            {new Date(product.expirationDate).toLocaleDateString('en-US', {
-                              month: 'long',
-                              day: 'numeric',
-                              year: 'numeric'
-                            })}
+                            {formatDateISO(product.expirationDate)}
                           </dd>
                         </div>
                     )}
+                    {/* Purchased Date moved into Product Details */}
+                    <div className="flex justify-between py-2 border-b border-gray-100">
+                      <dt className="text-gray-600">Purchased</dt>
+                      <dd className="font-semibold text-gray-900">{formatDateISO(product.purchaseDate)}</dd>
+                    </div>
                     <div className="flex justify-between py-2">
                       <dt className="text-gray-600">Created</dt>
                       <dd className="font-semibold text-gray-900">
-                        {new Date(product.createdAt).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
+                        {formatDateISO(product.createdAt)}
                       </dd>
                     </div>
                   </dl>
@@ -549,13 +544,17 @@ function StatCard({
                     icon: Icon,
                     label,
                     value,
+                    hoverValue,
                     color = 'gray',
                   }: {
   icon: any;
   label: string;
   value: string;
+  hoverValue?: string;
   color?: string;
 }) {
+  const [isHovered, setIsHovered] = useState(false);
+
   const colorClasses = {
     emerald: 'bg-emerald-100 text-emerald-700 border-emerald-200',
     blue: 'bg-blue-100 text-blue-700 border-blue-200',
@@ -565,12 +564,23 @@ function StatCard({
   };
 
   return (
-      <div className="bg-white rounded-xl p-4 border border-gray-200 hover:shadow-md transition-shadow">
+      <div
+          className="bg-white rounded-xl p-4 border border-gray-200 hover:shadow-md transition-shadow cursor-pointer relative"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+      >
         <div className={`inline-flex items-center justify-center p-2 rounded-lg mb-2 ${colorClasses[color as keyof typeof colorClasses]}`}>
           <Icon className="w-5 h-5" />
         </div>
         <p className="text-xs text-gray-600 font-medium mb-1">{label}</p>
-        <p className="text-xl font-bold text-gray-900">{value}</p>
+        <p className="text-xl font-bold text-gray-900">{isHovered && hoverValue ? hoverValue : value}</p>
+
+        {/* Tooltip indicator */}
+        {hoverValue && (
+            <div className="absolute top-2 right-2 text-gray-400 text-xs">
+              ⓘ
+            </div>
+        )}
       </div>
   );
 }

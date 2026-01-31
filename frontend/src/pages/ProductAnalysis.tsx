@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { ProductService } from '../services/product.service';
-import { ProductAnalysis } from '../types/api.types.ts';
+import { ProductAnalysis, ProductResponse } from '../types/api.types.ts';
 import Navbar from '../components/Navbar';
 import {
     ArrowLeft,
@@ -18,9 +18,9 @@ import {
     CheckCircle,
     XCircle,
     BarChart3,
-    Sparkles,
-    Info,
+
 } from 'lucide-react';
+import {formatSignificant, formatPercent } from '../utils/format';
 
 export default function ProductAnalysisPage() {
     const { id } = useParams<{ id: string }>();
@@ -28,14 +28,21 @@ export default function ProductAnalysisPage() {
     const navigate = useNavigate();
 
     const [analysis, setAnalysis] = useState<ProductAnalysis | null>(null);
+    const [product, setProduct] = useState<ProductResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
     useEffect(() => {
         if (!id || !token) return;
 
-        ProductService.analyzeProduct(id, token)
-            .then(setAnalysis)
+        Promise.all([
+            ProductService.getProduct(id, token),
+            ProductService.analyzeProduct(id, token)
+        ])
+            .then(([p, a]) => {
+                setProduct(p);
+                setAnalysis(a);
+            })
             .catch(err =>
                 setError(err instanceof Error ? err.message : String(err))
             )
@@ -56,7 +63,7 @@ export default function ProductAnalysisPage() {
         );
     }
 
-    if (!analysis) {
+    if (!analysis || !product) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-amber-50">
                 <Navbar />
@@ -87,8 +94,28 @@ export default function ProductAnalysisPage() {
         currentAvgDailyConsumption,
         estimatedFinishDate,
         statusSuggestion,
-        warnings
+        warnings,
+        estimatedDaysToFinishFromNow
     } = analysis;
+
+    // Calculate actual consumed quantity for hover display
+    const totalQuantity = percentRemaining ? remainingQuantity / (percentRemaining / 100) : undefined;
+    const consumedQuantity = typeof totalQuantity === 'number' ? totalQuantity - remainingQuantity : undefined;
+
+    // Get product unit from the fetched product (safe fallback)
+    const productUnit = product?.unit ?? '';
+
+    // Helper: format days into nearest weeks when <30 days, otherwise months
+    function formatDaysToWeeksOrMonths(days?: number | null): string | undefined {
+        if (days === null || days === undefined || !isFinite(Number(days))) return undefined;
+        const d = Math.max(0, Math.round(Number(days)));
+        if (d < 30) {
+            const weeks = Math.max(1, Math.round(d / 7));
+            return `${weeks} week${weeks > 1 ? 's' : ''}`;
+        }
+        const months = Math.max(1, Math.round(d / 30));
+        return `${months} month${months > 1 ? 's' : ''}`;
+    }
 
     // Treat both expired and finished as final states where recommendations/targets don't apply
     const isFinalState = isExpired || statusSuggestion === 'FINISHED' ;
@@ -167,7 +194,7 @@ export default function ProductAnalysisPage() {
                                 <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
                                     <statusConfig.icon className="w-10 h-10 text-white" />
                                 </div>
-                                <div className="flex-2">
+                                <div className="flex-1">
                                     <h1 className="text-4xl font-bold text-white mt-2">
                                         {statusConfig.title}
                                     </h1>
@@ -179,305 +206,175 @@ export default function ProductAnalysisPage() {
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-gray-200">
                             <QuickStat
                                 label="Consumed"
-                                value={`${(percentConsumed ?? 0).toFixed(1)}%`}
+                                value={formatPercent(percentConsumed, 2)}
+                                hoverValue={typeof consumedQuantity === 'number' ? `${formatSignificant(consumedQuantity, 2)} ${productUnit}` : undefined}
                                 icon={TrendingUp}
                                 color="emerald"
                             />
                             <QuickStat
                                 label="Remaining"
-                                value={`${(percentRemaining ?? 0).toFixed(1)}%`}
+                                value={formatPercent(percentRemaining, 2)}
+                                hoverValue={`${formatSignificant(remainingQuantity, 2)} ${productUnit}`}
                                 icon={Package}
                                 color="blue"
                             />
                             <QuickStat
                                 label="Days Left"
                                 value={isExpired ? 'Expired' : daysUntilExpiration !== null ? `${daysUntilExpiration}` : '—'}
+                                hoverValue={isExpired ? undefined : formatDaysToWeeksOrMonths(daysUntilExpiration)}
                                 icon={Clock}
                                 color={urgencyLevel === 'critical' ? 'red' : urgencyLevel === 'warning' ? 'amber' : 'gray'}
                             />
                             <QuickStat
                                 label="Daily Rate"
-                                value={currentAvgDailyConsumption ? currentAvgDailyConsumption.toFixed(1) : '—'}
+                                value={typeof currentAvgDailyConsumption === 'number' ? `${formatSignificant(currentAvgDailyConsumption, 2)} ${productUnit}/day` : '—'}
+                                hoverValue={typeof currentAvgDailyConsumption === 'number' ? `${formatSignificant(currentAvgDailyConsumption * 30, 2)} ${productUnit}/month` : undefined}
                                 icon={Activity}
                                 color="purple"
                             />
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Left Column - Main Analysis */}
-                        <div className="lg:col-span-2 space-y-6">
-                            {/* Consumption Progress */}
-                            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                                <div className="bg-gradient-to-r from-emerald-500 to-green-500 p-6">
-                                    <div className="flex items-center gap-2 text-white">
-                                        <BarChart3 className="w-6 h-6" />
-                                        <h2 className="text-xl font-bold">Consumption Progress</h2>
-                                    </div>
-                                </div>
-
-                                <div className="p-6 space-y-6">
-                                    {/* Progress Bar */}
-                                    <div>
-                                        <div className="flex justify-between items-baseline mb-3">
-                                            <span className="text-sm font-medium text-gray-600">Overall Progress</span>
-                                            <span className="text-3xl font-bold text-emerald-700">
-                                                {(percentConsumed ?? 0).toFixed(1)}%
-                                            </span>
-                                        </div>
-
-                                        <div className="relative h-6 bg-gray-200 rounded-full overflow-hidden">
-                                            <div
-                                                className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-400 via-emerald-500 to-green-500 rounded-full transition-all duration-500 ease-out flex items-center justify-end pr-2"
-                                                style={{ width: `${Math.min(percentConsumed ?? 0, 100)}%` }}
-                                            >
-                                                {(percentConsumed ?? 0) > 10 && (
-                                                    <span className="text-xs font-bold text-white">
-                                                        {(percentConsumed ?? 0).toFixed(0)}%
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="flex justify-between text-sm text-gray-600 mt-2">
-                                            <span>Started</span>
-                                            <span className="font-medium">{remainingQuantity} units remaining</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Progress Stats */}
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-200">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <TrendingUp className="w-5 h-5 text-emerald-600" />
-                                                <span className="text-sm font-medium text-gray-600">Consumed</span>
-                                            </div>
-                                            <p className="text-2xl font-bold text-emerald-700">
-                                                {(percentConsumed ?? 0).toFixed(1)}%
-                                            </p>
-                                        </div>
-
-                                        <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <Package className="w-5 h-5 text-blue-600" />
-                                                <span className="text-sm font-medium text-gray-600">Remaining</span>
-                                            </div>
-                                            <p className="text-2xl font-bold text-blue-700">
-                                                {(percentRemaining ?? 0).toFixed(1)}%
-                                            </p>
-                                        </div>
-                                    </div>
+                    {/* 2x2 Grid Layout */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Consumption Progress */}
+                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                            <div className="bg-gradient-to-r from-emerald-500 to-green-500 p-6">
+                                <div className="flex items-center gap-2 text-white">
+                                    <BarChart3 className="w-6 h-6" />
+                                    <h2 className="text-xl font-bold">Consumption Progress</h2>
                                 </div>
                             </div>
 
-                            {/* Time & Planning */}
-                            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                                <div className="bg-gradient-to-r from-blue-500 to-indigo-500 p-6">
-                                    <div className="flex items-center gap-2 text-white">
-                                        <Calendar className="w-6 h-6" />
-                                        <h2 className="text-xl font-bold">Timeline Analysis</h2>
+                            <div className="p-6">
+                                {/* Progress Bar */}
+                                <div className="mb-6">
+                                    <div className="flex justify-between items-baseline mb-3">
+                                        <span className="text-sm font-medium text-gray-600">Overall Progress</span>
+                                        <span className="text-3xl font-bold text-emerald-700">
+                                            {formatPercent(percentConsumed, 2)}
+                                        </span>
                                     </div>
-                                </div>
 
-                                <div className="p-6">
-                                    <div className="space-y-4">
-                                        {daysUntilExpiration !== null && (
-                                            <DataRow
-                                                icon={Clock}
-                                                label="Days until expiration"
-                                                value={isExpired ? 'Already expired' : `${daysUntilExpiration} days`}
-                                                highlight={urgencyLevel === 'critical'}
-                                                warning={urgencyLevel === 'warning'}
-                                            />
-                                        )}
-
-                                        <DataRow
-                                            icon={Activity}
-                                            label="Current usage rate"
-                                            value={currentAvgDailyConsumption ? `${currentAvgDailyConsumption.toFixed(2)}/day` : '—'}
-                                        />
-
-                                        {/* Recommended daily usage only when not final state */}
-                                        {!isFinalState && (
-                                            <DataRow
-                                                icon={Target}
-                                                label="Recommended daily usage"
-                                                value={recommendedDailyToFinish ? `${recommendedDailyToFinish.toFixed(2)}/day` : '—'}
-                                                highlighted
-                                            />
-                                        )}
-
-                                        <DataRow
-                                            icon={Calendar}
-                                            label="Estimated finish date"
-                                            value={
-                                                !isFinalState && estimatedFinishDate
-                                                    ? new Date(estimatedFinishDate).toLocaleDateString('en-US', {
-                                                        month: 'short',
-                                                        day: 'numeric',
-                                                        year: 'numeric'
-                                                    })
-                                                    : isFinalState
-                                                        ? 'Not applicable'
-                                                        : 'Cannot be estimated'
-                                            }
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Warnings */}
-                            {warnings && warnings.length > 0 && (
-                                <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-l-4 border-amber-500 rounded-r-2xl shadow-sm overflow-hidden">
-                                    <div className="p-6">
-                                        <div className="flex items-center gap-2 mb-4">
-                                            <AlertTriangle className="w-6 h-6 text-amber-600" />
-                                            <h3 className="text-lg font-bold text-amber-900">Important Notices</h3>
+                                    <div className="relative h-6 bg-gray-200 rounded-full overflow-hidden">
+                                        <div
+                                            className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-400 via-emerald-500 to-green-500 rounded-full transition-all duration-500 ease-out flex items-center justify-end pr-2"
+                                            style={{ width: `${Math.min(percentConsumed ?? 0, 100)}%` }}
+                                        >
+                                            {(percentConsumed ?? 0) > 10 && (
+                                                <span className="text-xs font-bold text-white">
+                                                    {(percentConsumed ?? 0).toFixed(0)}%
+                                                </span>
+                                            )}
                                         </div>
-                                        <div className="space-y-3">
-                                            {warnings.map((warning, idx) => (
-                                                <div key={idx} className="flex items-start gap-3 bg-white/70 rounded-lg p-4 border border-amber-200">
-                                                    <Info className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                                                    <p className="text-sm text-amber-900 leading-relaxed">{warning}</p>
-                                                </div>
+                                    </div>
+
+                                    <div className="flex justify-between text-sm text-gray-600 mt-2">
+                                        <span>Started</span>
+                                        <span className="font-medium">{formatSignificant(remainingQuantity, 2)} {productUnit} remaining</span>
+                                    </div>
+                                </div>
+
+                                {/* Warnings - Only show if warnings exist */}
+                                {warnings && warnings.length > 0 && (
+                                    <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-200 p-4">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <AlertTriangle className="w-4 h-4 text-amber-600" />
+                                            <h3 className="text-sm font-semibold text-amber-900">Warnings</h3>
+                                        </div>
+                                        <div className="space-y-1">
+                                            {warnings.map((w, idx) => (
+                                                <div key={idx} className="text-sm text-amber-900 pl-6">• {w}</div>
                                             ))}
                                         </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
 
-                        {/* Right Column - Insights */}
-                        <div className="space-y-6">
-                            {/* Smart Recommendation - hidden for final states */}
-                            {!isFinalState && recommendedDailyToFinish && (
-                                <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl shadow-lg border border-purple-200 overflow-hidden">
-                                    <div className="bg-gradient-to-r from-purple-500 to-indigo-500 p-6">
-                                        <div className="flex items-center gap-2 text-white">
-                                            <Sparkles className="w-6 h-6" />
-                                            <h3 className="font-bold text-lg">Smart Recommendation</h3>
-                                        </div>
-                                    </div>
-
-                                    <div className="p-6">
-                                        <p className="text-sm text-gray-600 mb-4">
-                                            To finish before expiration:
-                                        </p>
-                                        <div className="bg-white rounded-xl p-6 border-2 border-purple-200 mb-4 text-center">
-                                            <p className="text-5xl font-bold text-purple-700 mb-2">
-                                                {recommendedDailyToFinish.toFixed(1)}
-                                            </p>
-                                            <p className="text-sm text-gray-600 font-medium">units per day</p>
-                                        </div>
-
-                                        {estimatedFinishDate && (
-                                            <div className="bg-purple-100 rounded-lg p-4 border border-purple-200">
-                                                <div className="flex items-start gap-2 text-sm">
-                                                    <Calendar className="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />
-                                                    <div>
-                                                        <div className="text-sm font-medium text-purple-700">Estimated finish</div>
-                                                        <div className="text-xs text-gray-600">{new Date(estimatedFinishDate).toLocaleDateString()}</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
+                        {/* Timeline Analysis */}
+                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                            <div className="bg-gradient-to-r from-blue-500 to-indigo-500 p-6">
+                                <div className="flex items-center gap-2 text-white">
+                                    <Calendar className="w-6 h-6" />
+                                    <h2 className="text-xl font-bold">Timeline Analysis</h2>
                                 </div>
-                            )}
+                            </div>
 
-                            {/* Usage Efficiency - hidden for final states */}
-                            {!isFinalState &&
-                                hasStartedConsumption &&
-                                typeof recommendedDailyToFinish === 'number' && (
-                                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                                    <div className="p-6">
-                                        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                                            <Activity className="w-5 h-5 text-emerald-600" />
-                                            Usage Efficiency
-                                        </h3>
+                            <div className="p-6">
+                                <div className="space-y-4">
+                                    {daysUntilExpiration !== null && (
+                                        <DataRow
+                                            icon={Clock}
+                                            label="Days until expiration"
+                                            value={isExpired ? 'Already expired' : `${daysUntilExpiration} days`}
+                                            hoverValue={
+                                                isExpired
+                                                    ? undefined
+                                                    : formatDaysToWeeksOrMonths(daysUntilExpiration)
+                                            }
+                                            highlight={urgencyLevel === 'critical'}
+                                            warning={urgencyLevel === 'warning'}
+                                        />
 
-                                        <div className="space-y-4">
-                                            <div>
-                                                <div className="flex justify-between text-sm mb-2">
-                                                    <span className="text-gray-600">Current pace</span>
-                                                    <span className="font-semibold text-gray-900">{currentAvgDailyConsumption.toFixed(2)}/day</span>
+                                    )}
+
+                                    {hasStartedConsumption && (
+                                        <DataRow
+                                            icon={Activity}
+                                            label="Current usage rate"
+                                            value={`${formatSignificant(currentAvgDailyConsumption, 2)} ${productUnit}/day`}
+                                        />
+                                    )}
+
+                                    {/* Recommended daily usage only when not final state */}
+                                    {!isFinalState && recommendedDailyToFinish && (
+                                        <DataRow
+                                            icon={Target}
+                                            label="Recommended daily usage"
+                                            value={`${formatSignificant(recommendedDailyToFinish, 2)} ${productUnit}/day`}
+                                            highlighted
+                                        />
+                                    )}
+
+                                    {!isFinalState && estimatedFinishDate && estimatedDaysToFinishFromNow && (
+                                        <DataRow
+                                            icon={Calendar}
+                                            label="Estimated finish date"
+                                            value={new Date(estimatedFinishDate).toLocaleDateString('en-US', {
+                                                month: 'short',
+                                                day: 'numeric',
+                                                year: 'numeric'
+                                            })}
+                                            hoverValue={formatDaysToWeeksOrMonths(estimatedDaysToFinishFromNow)}
+                                        />
+                                    )}
+
+                                    {/* Usage Efficiency Status - moved from right column */}
+                                    {!isFinalState &&
+                                        hasStartedConsumption &&
+                                        typeof recommendedDailyToFinish === 'number' && (
+                                            <div className="mt-2 p-4 rounded-lg bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-200">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <Activity className="w-4 h-4 text-emerald-600" />
+                                                    <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Usage Status</p>
                                                 </div>
-                                                <div className="flex justify-between text-sm mb-2">
-                                                    <span className="text-gray-600">Recommended pace</span>
-                                                    <span className="font-semibold text-emerald-700">
-                                                        {recommendedDailyToFinish.toFixed(2)}/day
-                                                    </span>
-                                                </div>
-
-                                                <div className="mt-4 p-4 rounded-lg bg-gradient-to-br from-emerald-50 to-green-50 border border-emerald-200">
-                                                    <p className="text-xs text-gray-600 mb-1">Status</p>
-                                                    <p className="text-sm font-semibold text-emerald-800">
-                                                        {currentAvgDailyConsumption < recommendedDailyToFinish
-                                                            ? '⚠️ Usage below recommended pace'
-                                                            : currentAvgDailyConsumption > recommendedDailyToFinish * 1.5
-                                                                ? '⚡ Using faster than needed'
-                                                                : '✓ On track to finish on time'
-                                                        }
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            {!isFinalState && currentAvgDailyConsumption === 0 && (
-                                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm text-emerald-800">
-                                    Start consuming this product to see usage efficiency insights.
-                                </div>
-                            )}
-
-
-                            {/* Status Summary */}
-                            <div className={`rounded-2xl shadow-lg border overflow-hidden ${statusConfig.bgColor} ${statusConfig.borderColor}`}>
-                                <div className="p-6">
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <div className={`p-3 ${statusConfig.iconBg} rounded-xl`}>
-                                            <statusConfig.icon className={`w-6 h-6 ${statusConfig.iconColor}`} />
-                                        </div>
-                                        <h3 className={`font-bold text-lg ${statusConfig.textColor}`}>
-                                            Status Summary
-                                        </h3>
-                                    </div>
-
-                                    <div className="space-y-3 text-sm">
-                                        <div className="flex items-center justify-between py-2 border-b border-gray-200">
-                                            <span className="text-gray-600">Status</span>
-                                            <span className={`font-semibold ${statusConfig.textColor}`}>
-                                                {statusConfig.title}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center justify-between py-2 border-b border-gray-200">
-                                            <span className="text-gray-600">Progress</span>
-                                            <span className="font-semibold text-gray-900">
-                                                {(percentConsumed ?? 0).toFixed(1)}% Complete
-                                            </span>
-                                        </div>
-
-                                        {!isFinalState && daysUntilExpiration !== null && (
-                                            <div className="flex items-center justify-between py-2">
-                                                <span className="text-gray-600">Time remaining</span>
-                                                <span className={`font-semibold ${
-                                                    urgencyLevel === 'critical' ? 'text-red-700' :
-                                                        urgencyLevel === 'warning' ? 'text-amber-700' :
-                                                            'text-gray-900'
-                                                }`}>
-                                                    {daysUntilExpiration} days
-                                                </span>
+                                                <p className="text-sm font-semibold text-emerald-800">
+                                                    {currentAvgDailyConsumption < recommendedDailyToFinish
+                                                        ? '⚠️ Usage below recommended pace'
+                                                        : currentAvgDailyConsumption > recommendedDailyToFinish * 1.5
+                                                            ? '⚡ Using faster than needed'
+                                                            : '✓ On track to finish on time'
+                                                    }
+                                                </p>
                                             </div>
                                         )}
 
-                                        {isFinalState && (
-                                            <div className="flex items-center justify-between py-2">
-                                                <span className="text-gray-600">Time remaining</span>
-                                                <span className="font-semibold text-gray-700">Not applicable</span>
-                                            </div>
-                                        )}
-                                    </div>
+                                    {!isFinalState && !hasStartedConsumption && (
+                                        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-sm text-emerald-800">
+                                            Start consuming this product to see usage insights.
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -491,14 +388,18 @@ export default function ProductAnalysisPage() {
 function QuickStat({
                        label,
                        value,
+                       hoverValue,
                        icon: Icon,
                        color
                    }: {
     label: string;
     value: string;
+    hoverValue?: string;
     icon: any;
     color: string;
 }) {
+    const [isHovered, setIsHovered] = useState(false);
+
     const colorClasses = {
         emerald: 'text-emerald-600',
         blue: 'text-blue-600',
@@ -509,14 +410,25 @@ function QuickStat({
     };
 
     return (
-        <div className="bg-white p-6">
+        <div
+            className="bg-white p-6 cursor-pointer relative transition-all hover:bg-gray-50"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+        >
             <div className="flex items-center gap-2 mb-2">
                 <Icon className={`w-5 h-5 ${colorClasses[color as keyof typeof colorClasses]}`} />
                 <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">
                     {label}
                 </span>
             </div>
-            <p className="text-2xl font-bold text-gray-900">{value}</p>
+            <p className="text-2xl font-bold text-gray-900">
+                {isHovered && hoverValue ? hoverValue : value}
+            </p>
+            {hoverValue && (
+                <div className="absolute top-2 right-2 text-gray-400 text-xs">
+                    ⓘ
+                </div>
+            )}
         </div>
     );
 }
@@ -525,6 +437,7 @@ function DataRow({
                      icon: Icon,
                      label,
                      value,
+                     hoverValue,
                      highlight = false,
                      warning = false,
                      highlighted = false
@@ -532,20 +445,27 @@ function DataRow({
     icon: any;
     label: string;
     value: string;
+    hoverValue?: string;
     highlight?: boolean;
     warning?: boolean;
     highlighted?: boolean;
 }) {
+    const [isHovered, setIsHovered] = useState(false);
+
     return (
-        <div className={`flex items-start justify-between p-4 rounded-xl border-2 transition-all ${
-            highlighted
-                ? 'bg-gradient-to-r from-emerald-50 to-green-50 border-emerald-300'
-                : highlight
-                    ? 'bg-red-50 border-red-200'
-                    : warning
-                        ? 'bg-amber-50 border-amber-200'
-                        : 'bg-gray-50 border-gray-200'
-        }`}>
+        <div
+            className={`flex items-start justify-between p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                highlighted
+                    ? 'bg-gradient-to-r from-emerald-50 to-green-50 border-emerald-300'
+                    : highlight
+                        ? 'bg-red-50 border-red-200'
+                        : warning
+                            ? 'bg-amber-50 border-amber-200'
+                            : 'bg-gray-50 border-gray-200'
+            }`}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+        >
             <div className="flex items-center gap-3 flex-1">
                 <Icon className={`w-5 h-5 flex-shrink-0 ${
                     highlighted ? 'text-emerald-600' :
@@ -555,14 +475,19 @@ function DataRow({
                 }`} />
                 <span className="text-sm font-medium text-gray-700">{label}</span>
             </div>
-            <span className={`text-sm font-bold text-right ml-4 ${
-                highlighted ? 'text-emerald-700' :
-                    highlight ? 'text-red-700' :
-                        warning ? 'text-amber-700' :
-                            'text-gray-900'
-            }`}>
-                {value}
-            </span>
+            <div className="flex items-center gap-2">
+                <span className={`text-sm font-bold text-right ${
+                    highlighted ? 'text-emerald-700' :
+                        highlight ? 'text-red-700' :
+                            warning ? 'text-amber-700' :
+                                'text-gray-900'
+                }`}>
+                    {isHovered && hoverValue ? hoverValue : value}
+                </span>
+                {hoverValue && (
+                    <span className="text-gray-400 text-xs">ⓘ</span>
+                )}
+            </div>
         </div>
     );
 }

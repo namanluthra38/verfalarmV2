@@ -447,20 +447,30 @@ function FilterControl({ statuses, notificationFreqs, onChange }:
             <h4 className="text-sm font-semibold text-emerald-800 mb-2">Status</h4>
             <div className="flex flex-col gap-1 mb-3">
               {STATUS_OPTIONS.map(o => (
-                <label key={o} className="inline-flex items-center gap-2">
-                  <input type="checkbox" checked={localStatuses.includes(o)} onChange={() => toggleOption(localStatuses, setLocalStatuses, o)} />
+                <button
+                  key={o}
+                  type="button"
+                  onClick={() => toggleOption(localStatuses, setLocalStatuses, o)}
+                  className={`w-full text-left px-3 py-2 rounded-md hover:bg-emerald-50 inline-flex items-center gap-2 ${localStatuses.includes(o) ? 'bg-emerald-50 font-semibold' : ''}`}
+                >
+                  <input type="checkbox" checked={localStatuses.includes(o)} readOnly className="pointer-events-none" />
                   <span className="text-sm">{o}</span>
-                </label>
+                </button>
               ))}
             </div>
 
             <h4 className="text-sm font-semibold text-emerald-800 mb-2">Notification</h4>
             <div className="flex flex-col gap-1 mb-3">
               {NF_OPTIONS.map(o => (
-                <label key={o} className="inline-flex items-center gap-2">
-                  <input type="checkbox" checked={localNf.includes(o)} onChange={() => toggleOption(localNf, setLocalNf, o)} />
+                <button
+                  key={o}
+                  type="button"
+                  onClick={() => toggleOption(localNf, setLocalNf, o)}
+                  className={`w-full text-left px-3 py-2 rounded-md hover:bg-emerald-50 inline-flex items-center gap-2 ${localNf.includes(o) ? 'bg-emerald-50 font-semibold' : ''}`}
+                >
+                  <input type="checkbox" checked={localNf.includes(o)} readOnly className="pointer-events-none" />
                   <span className="text-sm">{o}</span>
-                </label>
+                </button>
               ))}
             </div>
 

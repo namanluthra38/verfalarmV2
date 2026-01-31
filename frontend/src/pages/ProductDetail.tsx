@@ -172,6 +172,7 @@ export default function ProductDetail() {
       Math.max(product.quantityConsumed ?? 0, remainingQuantity + (product.quantityConsumed ?? 0));
 
   const sliderPercent = maxQuantity > 0 ? Math.min(100, (consumedInput / maxQuantity) * 100) : 0;
+  const sliderStep = Math.min(0.01, maxQuantity * 0.01);
 
   // Determine urgency level for visual feedback
   const urgencyLevel = (() => {
@@ -270,13 +271,13 @@ export default function ProductDetail() {
                     <StatCard
                         icon={TrendingUp}
                         label="Consumed"
-                        value={typeof percentConsumed === 'number' ? `${percentConsumed.toFixed(1)}%` : '—'}
+                        value={typeof percentConsumed === 'number' ? `${percentConsumed.toFixed(2)}%` : '—'}
                         color="emerald"
                     />
                     <StatCard
                         icon={Package}
                         label="Remaining"
-                        value={`${remainingQuantity} ${product.unit}`}
+                        value={`${remainingQuantity.toFixed(2)} ${product.unit}`}
                         color="blue"
                     />
                     {product.expirationDate && (
@@ -332,8 +333,8 @@ export default function ProductDetail() {
                       </span>
                       </div>
                       <div className="flex items-baseline justify-between text-sm text-gray-600">
-                        <span>{consumedInput.toFixed(1)} {product.unit} consumed</span>
-                        <span>{remainingQuantity.toFixed(1)} {product.unit} left</span>
+                        <span>{consumedInput.toFixed(2)} {product.unit} consumed</span>
+                        <span>{remainingQuantity.toFixed(2)} {product.unit} left</span>
                       </div>
                     </div>
 
@@ -357,7 +358,7 @@ export default function ProductDetail() {
                             type="range"
                             min={0}
                             max={maxQuantity}
-                            step={0.1}
+                            step={sliderStep}
                             value={consumedInput}
                             onChange={e => setConsumedInput(Number(e.target.value))}
                             className="absolute left-0 top-0 w-full h-3 opacity-0 cursor-pointer"
@@ -366,7 +367,7 @@ export default function ProductDetail() {
 
                       <div className="flex justify-between text-xs text-gray-500 mt-2">
                         <span>0 {product.unit}</span>
-                        <span>{maxQuantity} {product.unit}</span>
+                        <span>{maxQuantity.toFixed(2)} {product.unit}</span>
                       </div>
                     </div>
 
@@ -414,7 +415,7 @@ export default function ProductDetail() {
                       </p>
                       <div className="bg-white rounded-xl p-5 border-2 border-purple-200 mb-4">
                         <p className="text-4xl font-bold text-purple-700 mb-1">
-                          {recommendedDailyToFinish.toFixed(1)}
+                          {recommendedDailyToFinish.toFixed(2)}
                         </p>
                         <p className="text-sm text-gray-600">{product.unit} per day</p>
                       </div>
@@ -473,7 +474,7 @@ export default function ProductDetail() {
                   <dl className="space-y-3 text-sm">
                     <div className="flex justify-between py-2 border-b border-gray-100">
                       <dt className="text-gray-600">Total Quantity</dt>
-                      <dd className="font-semibold text-gray-900">{maxQuantity} {product.unit}</dd>
+                      <dd className="font-semibold text-gray-900">{maxQuantity.toFixed(2)} {product.unit}</dd>
                     </div>
                     {product.expirationDate && (
                         <div className="flex justify-between py-2 border-b border-gray-100">

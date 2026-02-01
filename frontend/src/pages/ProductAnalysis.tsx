@@ -1,4 +1,3 @@
-// typescript
 // File: `frontend/src/pages/ProductAnalysis.tsx`
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -17,10 +16,10 @@ import {
     AlertTriangle,
     CheckCircle,
     XCircle,
-    BarChart3,
+    BarChart3
 
 } from 'lucide-react';
-import {formatSignificant, formatPercent } from '../utils/format';
+import { formatPercent, formatQuantity } from '../utils/format';
 
 export default function ProductAnalysisPage() {
     const { id } = useParams<{ id: string }>();
@@ -99,23 +98,36 @@ export default function ProductAnalysisPage() {
     } = analysis;
 
     // Calculate actual consumed quantity for hover display
-    const totalQuantity = percentRemaining ? remainingQuantity / (percentRemaining / 100) : undefined;
-    const consumedQuantity = typeof totalQuantity === 'number' ? totalQuantity - remainingQuantity : undefined;
-
-    // Get product unit from the fetched product (safe fallback)
-    const productUnit = product?.unit ?? '';
-
-    // Helper: format days into nearest weeks when <30 days, otherwise months
-    function formatDaysToWeeksOrMonths(days?: number | null): string | undefined {
-        if (days === null || days === undefined || !isFinite(Number(days))) return undefined;
-        const d = Math.max(0, Math.round(Number(days)));
-        if (d < 30) {
-            const weeks = Math.max(1, Math.round(d / 7));
-            return `${weeks} week${weeks > 1 ? 's' : ''}`;
+    // Safely compute consumed quantity for hover display.
+    // Avoid division-by-zero when percentRemaining is 0 or invalid (finished products).
+    let consumedQuantity: number | null = null;
+    try {
+        if (typeof percentRemaining === 'number' && isFinite(Number(percentRemaining)) && percentRemaining > 0) {
+            const totalQuantity = remainingQuantity / (percentRemaining / 100);
+            consumedQuantity = totalQuantity - remainingQuantity;
+        } else if (product && typeof product.quantityBought === 'number' && isFinite(Number(product.quantityBought))) {
+            // Fallback: use explicit quantityBought minus remaining
+            consumedQuantity = product.quantityBought - remainingQuantity;
+        } else if (product && typeof product.quantityConsumed === 'number' && isFinite(Number(product.quantityConsumed))) {
+            // Last resort: use provided consumed value from product
+            consumedQuantity = product.quantityConsumed;
         }
-        const months = Math.max(1, Math.round(d / 30));
-        return `${months} month${months > 1 ? 's' : ''}`;
+
+        // Clamp to sensible bounds
+        if (typeof consumedQuantity === 'number' && isFinite(consumedQuantity)) {
+            if (product && typeof product.quantityBought === 'number' && isFinite(Number(product.quantityBought))) {
+                consumedQuantity = Math.min(consumedQuantity, product.quantityBought);
+            }
+            consumedQuantity = Math.max(0, consumedQuantity);
+        } else {
+            consumedQuantity = null;
+        }
+    } catch (e) {
+        consumedQuantity = null;
     }
+
+    // Get product unit from the fetched product
+    const productUnit = product.unit;
 
     // Treat both expired and finished as final states where recommendations/targets don't apply
     const isFinalState = isExpired || statusSuggestion === 'FINISHED' ;
@@ -166,9 +178,25 @@ export default function ProductAnalysisPage() {
         return 'normal';
     })();
 
+    // Do not treat finished/expired as having an active consumption rate for UI
     const hasStartedConsumption =
+        !isFinalState &&
         typeof currentAvgDailyConsumption === 'number' &&
         currentAvgDailyConsumption > 0;
+
+    // Helper to format a duration (weeks if < 30 days, months otherwise)
+    const formatDurationFromDays = (days: number | null) => {
+        if (days === null) return undefined;
+        if (days < 30) {
+            const weeks = Math.max(1, Math.round(days / 7));
+            return `${weeks} ${weeks === 1 ? 'week' : 'weeks'}`;
+        }
+        const months = Math.round(days / 30);
+        return `~${months} ${months === 1 ? 'month' : 'months'}`;
+    };
+
+    // Build first quick stat label with merged "Product Available" when applicable
+    const firstStatLabel = 'Consumed';
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-amber-50">
@@ -202,33 +230,50 @@ export default function ProductAnalysisPage() {
                             </div>
                         </div>
 
-                        {/* Quick Stats Bar */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-gray-200">
+                        {/* Quick Stats Bar - forced 2x2 */}
+                        <div className="grid grid-cols-2 gap-px bg-gray-200">
+                            {
+                                // Prepare a safe hover string for consumed quantity.
+                                // Prefer calculated consumedQuantity, fall back to product.quantityConsumed or product.quantityBought.
+                            }
                             <QuickStat
-                                label="Consumed"
+                                label={firstStatLabel}
                                 value={formatPercent(percentConsumed, 2)}
-                                hoverValue={typeof consumedQuantity === 'number' ? `${formatSignificant(consumedQuantity, 2)} ${productUnit}` : undefined}
+                                hoverValue={(() => {
+                                    // already formatted string expected by QuickStat
+                                    if (typeof consumedQuantity === 'number' && isFinite(consumedQuantity)) {
+                                        return formatQuantity(consumedQuantity, productUnit, 2);
+                                    }
+                                    if (product && typeof product.quantityConsumed === 'number' && isFinite(product.quantityConsumed)) {
+                                        return formatQuantity(product.quantityConsumed, productUnit, 2);
+                                    }
+                                    if (product && typeof product.quantityBought === 'number' && isFinite(product.quantityBought)) {
+                                        // For finished products, show bought amount as consumed when remaining=0
+                                        return formatQuantity(product.quantityBought, productUnit, 2);
+                                    }
+                                    return undefined;
+                                })()}
                                 icon={TrendingUp}
                                 color="emerald"
                             />
                             <QuickStat
                                 label="Remaining"
                                 value={formatPercent(percentRemaining, 2)}
-                                hoverValue={`${formatSignificant(remainingQuantity, 2)} ${productUnit}`}
+                                hoverValue={formatQuantity(remainingQuantity, productUnit, 2)}
                                 icon={Package}
                                 color="blue"
                             />
                             <QuickStat
                                 label="Days Left"
                                 value={isExpired ? 'Expired' : daysUntilExpiration !== null ? `${daysUntilExpiration}` : '—'}
-                                hoverValue={isExpired ? undefined : formatDaysToWeeksOrMonths(daysUntilExpiration)}
+                                hoverValue={isExpired ? undefined : formatDurationFromDays(daysUntilExpiration)}
                                 icon={Clock}
                                 color={urgencyLevel === 'critical' ? 'red' : urgencyLevel === 'warning' ? 'amber' : 'gray'}
                             />
                             <QuickStat
                                 label="Daily Rate"
-                                value={typeof currentAvgDailyConsumption === 'number' ? `${formatSignificant(currentAvgDailyConsumption, 2)} ${productUnit}/day` : '—'}
-                                hoverValue={typeof currentAvgDailyConsumption === 'number' ? `${formatSignificant(currentAvgDailyConsumption * 30, 2)} ${productUnit}/month` : undefined}
+                                value={!isFinalState && currentAvgDailyConsumption ? `${formatQuantity(currentAvgDailyConsumption, productUnit, 2)}/day` : '—'}
+                                hoverValue={!isFinalState && currentAvgDailyConsumption ? `${formatQuantity(currentAvgDailyConsumption * 30, productUnit, 2)}/month` : undefined}
                                 icon={Activity}
                                 color="purple"
                             />
@@ -271,7 +316,7 @@ export default function ProductAnalysisPage() {
 
                                     <div className="flex justify-between text-sm text-gray-600 mt-2">
                                         <span>Started</span>
-                                        <span className="font-medium">{formatSignificant(remainingQuantity, 2)} {productUnit} remaining</span>
+                                        <span className="font-medium">{formatQuantity(remainingQuantity, productUnit, 2)} remaining</span>
                                     </div>
                                 </div>
 
@@ -308,22 +353,17 @@ export default function ProductAnalysisPage() {
                                             icon={Clock}
                                             label="Days until expiration"
                                             value={isExpired ? 'Already expired' : `${daysUntilExpiration} days`}
-                                            hoverValue={
-                                                isExpired
-                                                    ? undefined
-                                                    : formatDaysToWeeksOrMonths(daysUntilExpiration)
-                                            }
+                                            hoverValue={isExpired ? undefined : formatDurationFromDays(daysUntilExpiration)}
                                             highlight={urgencyLevel === 'critical'}
                                             warning={urgencyLevel === 'warning'}
                                         />
-
                                     )}
 
                                     {hasStartedConsumption && (
                                         <DataRow
                                             icon={Activity}
                                             label="Current usage rate"
-                                            value={`${formatSignificant(currentAvgDailyConsumption, 2)} ${productUnit}/day`}
+                                            value={`${formatQuantity(currentAvgDailyConsumption!, productUnit, 2)}/day`}
                                         />
                                     )}
 
@@ -332,7 +372,7 @@ export default function ProductAnalysisPage() {
                                         <DataRow
                                             icon={Target}
                                             label="Recommended daily usage"
-                                            value={`${formatSignificant(recommendedDailyToFinish, 2)} ${productUnit}/day`}
+                                            value={`${formatQuantity(recommendedDailyToFinish, productUnit, 2)}/day`}
                                             highlighted
                                         />
                                     )}
@@ -346,7 +386,7 @@ export default function ProductAnalysisPage() {
                                                 day: 'numeric',
                                                 year: 'numeric'
                                             })}
-                                            hoverValue={formatDaysToWeeksOrMonths(estimatedDaysToFinishFromNow)}
+                                            hoverValue={`${formatDurationFromDays(estimatedDaysToFinishFromNow) } from now`}
                                         />
                                     )}
 
@@ -360,9 +400,9 @@ export default function ProductAnalysisPage() {
                                                     <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Usage Status</p>
                                                 </div>
                                                 <p className="text-sm font-semibold text-emerald-800">
-                                                    {currentAvgDailyConsumption < recommendedDailyToFinish
+                                                    {currentAvgDailyConsumption! < recommendedDailyToFinish
                                                         ? '⚠️ Usage below recommended pace'
-                                                        : currentAvgDailyConsumption > recommendedDailyToFinish * 1.5
+                                                        : currentAvgDailyConsumption! > recommendedDailyToFinish * 1.5
                                                             ? '⚡ Using faster than needed'
                                                             : '✓ On track to finish on time'
                                                     }

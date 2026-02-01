@@ -19,7 +19,7 @@ import {
   Target,
   Sparkles,
 } from 'lucide-react';
-import { formatDateISO, formatSignificant, formatPercent } from '../utils/format';
+import { formatDateISO, formatSignificant, formatPercent, formatQuantity } from '../utils/format';
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
@@ -128,10 +128,12 @@ export default function ProductDetail() {
     remainingQuantity,
     percentConsumed,
     daysUntilExpiration,
+    monthsUntilExpiration,
     isExpired,
     statusSuggestion,
     recommendedDailyToFinish,
     estimatedFinishDate,
+    currentAvgDailyConsumption,
   } = analysis;
 
   // Ensure we always show purchaseDate and notification frequency
@@ -288,14 +290,14 @@ export default function ProductDetail() {
                         icon={TrendingUp}
                         label="Consumed"
                         value={formatPercent(percentConsumed, 2)}
-                        hoverValue={`${formatSignificant(product.quantityConsumed ?? 0, 2)} ${product.unit}`}
+                        hoverValue={formatQuantity(product.quantityConsumed ?? 0, product.unit, 2)}
                         color="emerald"
                     />
                     <StatCard
                         icon={Package}
                         label="Remaining"
                         value={formatPercent(100 - percentConsumed, 2)}
-                        hoverValue={`${formatSignificant(remainingQuantity, 2)} ${product.unit}`}
+                        hoverValue={formatQuantity(remainingQuantity, product.unit, 2)}
                         color="blue"
                     />
                     {product.expirationDate && (
@@ -331,8 +333,8 @@ export default function ProductDetail() {
                       </span>
                       </div>
                       <div className="flex items-baseline justify-between text-sm text-gray-600">
-                        <span>{formatSignificant(consumedInput, 2)} {product.unit} consumed</span>
-                        <span>{formatSignificant(remainingQuantity, 2)} {product.unit} left</span>
+                        <span>{formatQuantity(consumedInput, product.unit, 2)} consumed</span>
+                        <span>{formatQuantity(remainingQuantity, product.unit, 2)} left</span>
                       </div>
                     </div>
 
@@ -365,7 +367,7 @@ export default function ProductDetail() {
 
                       <div className="flex justify-between text-xs text-gray-500 mt-2">
                         <span>0 {product.unit}</span>
-                        <span>{formatSignificant(maxQuantity, 2)} {product.unit}</span>
+                        <span>{formatQuantity(maxQuantity, product.unit, 2)}</span>
                       </div>
                     </div>
 
@@ -413,9 +415,9 @@ export default function ProductDetail() {
                       </p>
                       <div className="bg-white rounded-xl p-5 border-2 border-purple-200 mb-4">
                         <p className="text-4xl font-bold text-purple-700 mb-1">
-                          {formatSignificant(recommendedDailyToFinish, 2)}
+                          {formatQuantity(recommendedDailyToFinish, product.unit, 2).split(' ')[0]}
                         </p>
-                        <p className="text-sm text-gray-600">{product.unit} per day</p>
+                        <p className="text-sm text-gray-600">{formatQuantity(recommendedDailyToFinish, product.unit, 2).split(' ').slice(1).join(' ')} per day</p>
                       </div>
 
                       {estimatedFinishDate && (

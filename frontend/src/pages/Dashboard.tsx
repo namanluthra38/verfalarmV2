@@ -5,7 +5,7 @@ import { ProductService } from '../services/product.service';
 import { ProductResponse } from '../types/api.types';
 import Navbar from '../components/Navbar';
 import ProductCard from '../components/ProductCard';
-import { Plus, RefreshCw, SearchX, ChevronLeft, ChevronRight, ArrowDownToDot, ArrowUpFromDot } from 'lucide-react';
+import { Plus, RefreshCw, SearchX, Search, ChevronLeft, ChevronRight, ArrowDownToDot, ArrowUpFromDot } from 'lucide-react';
 
 const PAGE_SIZE = 9;
 
@@ -50,6 +50,18 @@ export default function Dashboard() {
     const id = setTimeout(() => setDebouncedQuery(searchQuery.trim()), 350);
     return () => clearTimeout(id);
   }, [searchQuery]);
+
+  // When the debounced query changes, fetch results (reset to first page).
+  // We intentionally avoid listing fetchProducts in deps to prevent re-creating the effect loop.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user || !token) return;
+    if (location.pathname !== '/dashboard') return;
+
+    // always fetch first page for a new query
+    fetchProducts(0);
+  }, [debouncedQuery, authLoading, user, token, location.pathname]);
 
   const requestIdRef = useRef(0);
 
@@ -179,7 +191,7 @@ export default function Dashboard() {
                 {searchQuery ? (
                   <button onClick={() => { setSearchQuery(''); setDebouncedQuery(''); fetchProducts(0).catch(()=>{}); }} className="ml-2 text-gray-500">Clear</button>
                 ) : (
-                  <SearchX className="w-5 h-5 text-emerald-600 ml-2" />
+                  <Search className="w-5 h-5 text-emerald-600 ml-2" />
                 )}
               </div>
             </div>

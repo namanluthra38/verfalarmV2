@@ -12,16 +12,7 @@ import java.util.Optional;
 
 @Configuration
 @EnableMongoAuditing(dateTimeProviderRef = "auditingDateTimeProvider")
-public class MongoConfig extends AbstractMongoClientConfiguration {
-    @Override
-    protected @NotNull String getDatabaseName() {
-        return "db";
-    }
-
-    @Override
-    protected boolean autoIndexCreation() {
-        return true;
-    }
+public class MongoConfig  {
     @Bean(name = "auditingDateTimeProvider")
     public DateTimeProvider auditingDateTimeProvider() {
         return () -> Optional.of(Instant.now());

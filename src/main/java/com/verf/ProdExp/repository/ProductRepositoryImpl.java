@@ -15,6 +15,7 @@ import org.springframework.stereotype.Repository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Repository
 @RequiredArgsConstructor
@@ -58,9 +59,25 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         criteria.add(Criteria.where("userId").is(userId));
 
         if (nameLowerPrefix != null && !nameLowerPrefix.isEmpty()) {
-            // prefix regex anchored at start, case already normalized to lower-case by application
-            Pattern p = Pattern.compile("^" + Pattern.quote(nameLowerPrefix));
-            criteria.add(Criteria.where("nameLower").regex(p));
+            // Tokenize the query and require each token to appear somewhere in nameLower (AND semantics).
+            // This makes queries like "milk" match "dairy milk", and "dairy milk" match both tokens.
+            String[] rawTokens = nameLowerPrefix.split("\\s+");
+            // Prefer tokens of length >= 2 to avoid extremely broad single-character matches; if all tokens are short, fall back to rawTokens
+            List<String> tokens = java.util.Arrays.stream(rawTokens)
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .collect(Collectors.toList());
+
+            List<String> effective = tokens.stream().filter(t -> t.length() >= 2).collect(Collectors.toList());
+            if (effective.isEmpty()) {
+                effective = tokens;
+            }
+
+            for (String tok : effective) {
+                // Use an unanchored, escaped regex so we match substrings anywhere in nameLower
+                Pattern p = Pattern.compile("^" + Pattern.quote(tok));
+                criteria.add(Criteria.where("nameLower").regex(p));
+            }
         }
 
         q.addCriteria(new Criteria().andOperator(criteria.toArray(new Criteria[0])));

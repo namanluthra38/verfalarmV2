@@ -34,6 +34,8 @@ public class ProductServiceImpl implements ProductService {
         Product product = ProductMapper.toEntity(request);
         // ensure status is correct
         product.setStatus(ProductMapper.computeStatus(product));
+        // ensure nameLower is stored for indexed search
+        if (product.getName() != null) product.setNameLower(product.getName().toLowerCase().trim());
         Product saved = repository.save(product);
         return ProductMapper.toResponse(saved);
     }
@@ -80,6 +82,9 @@ public class ProductServiceImpl implements ProductService {
         ));
         // copy tags (allow null or empty -> set null if empty to avoid storing empty arrays unnecessarily)
         existing.setTags(request.tags() == null || request.tags().isEmpty() ? null : List.copyOf(request.tags()));
+
+        // ensure nameLower is updated when name changes
+        if (existing.getName() != null) existing.setNameLower(existing.getName().toLowerCase().trim());
 
         // recompute status
         existing.setStatus(ProductMapper.computeStatus(existing));
@@ -206,6 +211,20 @@ public class ProductServiceImpl implements ProductService {
             changed = toSave.size();
         }
         return changed;
+    }
+
+    @Override
+    public Page<ProductResponse> searchByUser(Pageable pageable, String userId, String query) {
+        if (userId == null || userId.trim().isEmpty()) throw new BadRequestException("userId is required");
+        // normalize query to lower-case and trim; empty query returns empty page
+        String q = query == null ? "" : query.trim().toLowerCase();
+        if (q.isEmpty()) {
+            // return empty page rather than all products to avoid expensive queries
+            return Page.empty(pageable);
+        }
+
+        Page<com.verf.ProdExp.entity.Product> page = repository.searchByUserNamePrefix(userId, q, pageable);
+        return page.map(ProductMapper::toResponse);
     }
 
     private void validateRequest(ProductRequest request) {

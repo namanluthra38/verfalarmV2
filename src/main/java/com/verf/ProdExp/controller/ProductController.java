@@ -244,4 +244,25 @@ public class ProductController {
         resp.put("userId", userId);
         return ResponseEntity.ok(resp);
     }
+
+    @GetMapping("/user/{userId}/search")
+    @PreAuthorize("hasRole('ADMIN') or @securityService.isUserMatching(#userId)")
+    public ResponseEntity<org.springframework.data.domain.Page<ProductResponse>> searchByUser(@PathVariable String userId,
+                                                                                             @RequestParam(required = false, defaultValue = "") String q,
+                                                                                             @RequestParam(required = false, defaultValue = "0") int pageNumber,
+                                                                                             @RequestParam(required = false, defaultValue = "10") int pageSize,
+                                                                                             @RequestParam(required = false, defaultValue = "name") String sortBy,
+                                                                                             @RequestParam(required = false, defaultValue = "asc") String sortDirection) {
+        if (pageNumber < 0) throw new BadRequestException("pageNumber must be >= 0");
+        if (pageSize <= 0) throw new BadRequestException("pageSize must be > 0");
+
+        if (!ALLOWED_SORT_FIELDS.contains(sortBy)) {
+            throw new BadRequestException("Invalid sortBy field: " + sortBy + ". Allowed: " + ALLOWED_SORT_FIELDS);
+        }
+
+        Sort sort = sortDirection.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        org.springframework.data.domain.PageRequest pageable = org.springframework.data.domain.PageRequest.of(pageNumber, pageSize, sort);
+
+        return ResponseEntity.ok(productService.searchByUser(pageable, userId, q == null ? "" : q));
+    }
 }

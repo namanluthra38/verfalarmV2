@@ -15,4 +15,11 @@ public interface ProductRepository extends MongoRepository<Product, String>, Pro
     Page<Product> findByUserId(String userId, Pageable pageable);
     List<Product> findAllByUserId(String userId);
     void deleteByUserId(String userId);
+    List<Product> findByUserIdAndNameLowerStartingWith(
+            String userId,
+            String nameLower
+    );
+
+    // New indexed search (prefix) exposed directly on repository for simple use-cases
+    Page<Product> findByUserIdAndNameLowerStartingWith(String userId, String nameLower, Pageable pageable);
 }

@@ -19,7 +19,7 @@ import {
   Target,
   Sparkles,
 } from 'lucide-react';
-import { formatDateISO, formatSignificant, formatPercent, formatQuantity } from '../utils/format';
+import { formatDateISO,  formatPercent, formatQuantity } from '../utils/format';
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
@@ -128,12 +128,10 @@ export default function ProductDetail() {
     remainingQuantity,
     percentConsumed,
     daysUntilExpiration,
-    monthsUntilExpiration,
     isExpired,
     statusSuggestion,
     recommendedDailyToFinish,
     estimatedFinishDate,
-    currentAvgDailyConsumption,
   } = analysis;
 
   // Ensure we always show purchaseDate and notification frequency

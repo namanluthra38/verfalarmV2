@@ -14,6 +14,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 @Repository
 @RequiredArgsConstructor
@@ -49,5 +50,30 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         List<Product> list = mongoTemplate.find(q, Product.class);
         return new PageImpl<>(list, pageable, total);
     }
-}
 
+    @Override
+    public Page<Product> searchByUserNamePrefix(String userId, String nameLowerPrefix, Pageable pageable) {
+        Query q = new Query();
+        List<Criteria> criteria = new ArrayList<>();
+        criteria.add(Criteria.where("userId").is(userId));
+
+        if (nameLowerPrefix != null && !nameLowerPrefix.isEmpty()) {
+            // prefix regex anchored at start, case already normalized to lower-case by application
+            Pattern p = Pattern.compile("^" + Pattern.quote(nameLowerPrefix));
+            criteria.add(Criteria.where("nameLower").regex(p));
+        }
+
+        q.addCriteria(new Criteria().andOperator(criteria.toArray(new Criteria[0])));
+
+        long total = mongoTemplate.count(q, Product.class);
+
+        if (pageable.getSort().isSorted()) {
+            pageable.getSort().forEach(order -> q.with(org.springframework.data.domain.Sort.by(order)));
+        }
+
+        q.with(pageable);
+
+        List<Product> list = mongoTemplate.find(q, Product.class);
+        return new PageImpl<>(list, pageable, total);
+    }
+}

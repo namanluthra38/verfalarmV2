@@ -21,6 +21,7 @@ public class ProductMapper {
                 .id(null)
                 .userId(req.userId())
                 .name(req.name())
+                .nameLower(req.name().toLowerCase())
                 .quantityBought(req.quantityBought())
                 .quantityConsumed(req.quantityConsumed())
                 .unit(req.unit())

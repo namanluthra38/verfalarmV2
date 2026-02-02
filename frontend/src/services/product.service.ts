@@ -103,6 +103,26 @@ export class ProductService {
     return this.fetchApi<PageableResponse<ProductResponse>>(endpoint, token);
   }
 
+  // Search products by name for a specific user (paginated)
+  static async searchUserProducts(
+    userId: string,
+    token: string,
+    q: string,
+    params?: { pageNumber?: number; pageSize?: number; sortBy?: string; sortDirection?: 'asc'|'desc' }
+  ): Promise<PageableResponse<ProductResponse>> {
+    const queryParams = new URLSearchParams();
+    if (params?.pageNumber !== undefined) queryParams.append('pageNumber', params.pageNumber.toString());
+    if (params?.pageSize !== undefined) queryParams.append('pageSize', params.pageSize.toString());
+    if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
+    if (params?.sortDirection) queryParams.append('sortDirection', params.sortDirection);
+    if (q !== undefined && q !== null && String(q).trim() !== '') queryParams.append('q', String(q));
+
+    const query = queryParams.toString();
+    const endpoint = `${API_CONFIG.ENDPOINTS.PRODUCTS.BY_USER(userId)}/search${query ? `?${query}` : ''}`;
+
+    return this.fetchApi<PageableResponse<ProductResponse>>(endpoint, token);
+  }
+
   static async updateProduct(
     id: string,
     data: ProductRequest,

@@ -20,8 +20,8 @@ import java.util.List;
 @Builder
 @CompoundIndexes({
         @CompoundIndex(
-                name = "user_name_idx",
-                def = "{'userId': 1, 'nameLower': 1}"
+                name = "user_name_tokens_idx",
+                def = "{'userId': 1, 'nameTokens': 1}"
         )
 })
 public class Product {
@@ -33,6 +33,7 @@ public class Product {
     @NonNull
     private String name;
     private String nameLower;
+    private List<String> nameTokens;
     @NonNull
     private Double quantityBought;
     @NonNull

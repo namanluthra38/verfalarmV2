@@ -8,7 +8,10 @@ import com.verf.ProdExp.entity.NotificationFrequency;
 import com.verf.ProdExp.util.NotificationFrequencyCalculator;
 
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class ProductMapper {
 
@@ -17,11 +20,15 @@ public class ProductMapper {
                 req.purchaseDate(), req.expirationDate(), req.quantityBought(), req.quantityConsumed()
         );
 
+        String nameLower = req.name() == null ? null : req.name().toLowerCase().trim();
+        List<String> tokens = nameLower == null ? null : tokenizeName(nameLower);
+
         return Product.builder()
                 .id(null)
                 .userId(req.userId())
                 .name(req.name())
-                .nameLower(req.name().toLowerCase())
+                .nameLower(nameLower)
+                .nameTokens(tokens)
                 .quantityBought(req.quantityBought())
                 .quantityConsumed(req.quantityConsumed())
                 .unit(req.unit())
@@ -63,5 +70,18 @@ public class ProductMapper {
         if (finished) return Status.FINISHED;
         else if (expired) return Status.EXPIRED;
         return Status.AVAILABLE;
+    }
+
+    private static List<String> tokenizeName(String lower) {
+        // split on non-word characters, keep tokens length >= 1, dedupe preserving order
+        String[] parts = lower.split("\\W+");
+        Set<String> set = new LinkedHashSet<>();
+        for (String p : parts) {
+            if (p == null) continue;
+            String t = p.trim();
+            if (t.isEmpty()) continue;
+            set.add(t);
+        }
+        return set.stream().collect(Collectors.toList());
     }
 }

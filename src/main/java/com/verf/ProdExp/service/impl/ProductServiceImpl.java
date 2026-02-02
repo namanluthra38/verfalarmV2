@@ -223,7 +223,19 @@ public class ProductServiceImpl implements ProductService {
             return Page.empty(pageable);
         }
 
-        Page<com.verf.ProdExp.entity.Product> page = repository.searchByUserNamePrefix(userId, q, pageable);
+        // tokenize query similar to ProductMapper.tokenizeName
+        String[] parts = q.split("\\W+");
+        List<String> tokens = new ArrayList<>();
+        for (String p : parts) {
+            if (p == null) continue;
+            String t = p.trim();
+            if (t.isEmpty()) continue;
+            tokens.add(t);
+        }
+        List<String> effective = tokens.stream().filter(t -> t.length() >= 2).collect(Collectors.toList());
+        if (effective.isEmpty()) effective = tokens;
+
+        Page<Product> page = repository.searchByUserNameTokens(userId, effective, pageable);
         return page.map(ProductMapper::toResponse);
     }
 

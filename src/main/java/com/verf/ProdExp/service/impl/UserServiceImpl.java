@@ -9,6 +9,9 @@ import com.verf.ProdExp.repository.ProductRepository;
 import com.verf.ProdExp.service.MailService;
 import com.verf.ProdExp.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
@@ -69,8 +72,16 @@ public class UserServiceImpl implements UserService {
         if (request.displayName() != null) {
             existing.setDisplayName(request.displayName());
         }
-        if (request.enabled() != null) existing.setEnabled(request.enabled());
-
+        if (request.enabled() != null) {
+            // only allow admins to change the enabled flag
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            boolean isAdmin = auth != null && auth.getAuthorities() != null && auth.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+            if (!isAdmin) {
+                throw new AccessDeniedException("Only administrators can change enabled status");
+            }
+            existing.setEnabled(request.enabled());
+        }
         User saved = userRepository.save(existing);
         return new UserResponse(saved.getId(), saved.getEmail(), saved.getRoles(), saved.isEnabled(), saved.getDisplayName(), saved.getCreatedAt(), saved.getUpdatedAt());
     }

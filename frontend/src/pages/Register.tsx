@@ -22,9 +22,21 @@ export default function Register() {
       // After registering, direct user to a "check your email" page instead of auto-login
       navigate('/check-email');
     } catch (err) {
-      // Attempt to extract useful message
-      const msg = err instanceof Error ? err.message : String(err);
-      setError(msg || 'Registration failed');
+      // Normalize server errors into friendly messages
+      const raw = err instanceof Error ? err.message : String(err);
+      const lower = (raw || '').toLowerCase();
+      let friendly = 'Registration failed';
+
+      if (lower.includes('email') && (lower.includes('already') || lower.includes('registered') || lower.includes('exists'))) {
+        friendly = 'This email is already registered — try signing in or use "Forgot password" to reset your password.';
+      } else if (lower.includes('password') && (lower.includes('length') || lower.includes('8'))) {
+        friendly = 'Password must be at least 8 characters.';
+      } else if (raw) {
+        // If the server sent a readable message, show it (fallback)
+        friendly = raw;
+      }
+
+      setError(friendly || 'Registration failed');
     } finally {
       setLoading(false);
     }

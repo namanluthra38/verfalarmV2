@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { ProductService } from '../services/product.service';
 import { ProductRequest } from '../types/api.types';
 import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 import { Save, ArrowLeft, X, Plus, Check, RotateCcw } from 'lucide-react';
 import { Unit } from '../types/Unit';
 import { formatSignificant } from '../utils/format';
@@ -64,6 +65,12 @@ export default function ProductForm() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!token) return;
+
+    // Do not allow submit until quantityBought has been confirmed/locked
+    if (!isQuantityLocked) {
+      setError('Please confirm the "Quantity Bought" before saving.');
+      return;
+    }
 
     setLoading(true);
     setError('');
@@ -339,7 +346,7 @@ export default function ProductForm() {
               <div className="flex gap-4 pt-4">
                 <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || !isQuantityLocked}
                     className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-200"
                 >
                   <Save className="w-5 h-5" />
@@ -353,9 +360,14 @@ export default function ProductForm() {
                   Cancel
                 </button>
               </div>
+
+              {!isQuantityLocked && (
+                  <div className="text-sm text-amber-700 mt-2">Please confirm the Quantity Bought using the Confirm button before saving.</div>
+              )}
             </form>
           </div>
         </div>
+        <Footer />
       </div>
   );
 }

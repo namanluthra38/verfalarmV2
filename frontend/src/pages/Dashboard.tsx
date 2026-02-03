@@ -6,6 +6,7 @@ import { ProductResponse } from '../types/api.types';
 import Navbar from '../components/Navbar';
 import ProductCard from '../components/ProductCard';
 import { Plus, RefreshCw, SearchX, Search, ChevronLeft, ChevronRight, ArrowDownToDot, ArrowUpFromDot } from 'lucide-react';
+import Footer from '../components/Footer';
 
 const PAGE_SIZE = 9;
 
@@ -187,7 +188,7 @@ export default function Dashboard() {
 
             <div className="relative">
               <div className="flex items-center bg-white px-3 py-2 rounded-lg border-2 border-emerald-200">
-                <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search by name..." className="outline-none w-64 text-sm" />
+                <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search by name or tags" className="outline-none w-64 text-sm" />
                 {searchQuery ? (
                   <button onClick={() => { setSearchQuery(''); setDebouncedQuery(''); fetchProducts(0).catch(()=>{}); }} className="ml-2 text-gray-500">Clear</button>
                 ) : (
@@ -245,6 +246,7 @@ export default function Dashboard() {
           </>
         )}
       </div>
+      <Footer />
     </div>
   );
 }

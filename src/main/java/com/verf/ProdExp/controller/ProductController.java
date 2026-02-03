@@ -4,6 +4,7 @@ import com.verf.ProdExp.dto.ProductRequest;
 import com.verf.ProdExp.dto.ProductResponse;
 import com.verf.ProdExp.dto.QuantityConsumedUpdateRequest;
 import com.verf.ProdExp.entity.NotificationFrequency;
+import com.verf.ProdExp.entity.Status;
 import com.verf.ProdExp.exception.BadRequestException;
 import com.verf.ProdExp.service.ProductService;
 import lombok.RequiredArgsConstructor;
@@ -78,7 +79,6 @@ public class ProductController {
                 request.unit(),
                 request.purchaseDate(),
                 request.expirationDate(),
-                request.notificationFrequency() == null ? NotificationFrequency.MONTHLY : request.notificationFrequency(),
                 request.tags()
         );
         log.debug("Creating product for userId={} name={}", currentUserId, request.name());
@@ -104,7 +104,10 @@ public class ProductController {
                                                            @RequestParam(required = false, defaultValue = "0") int pageNumber,
                                                            @RequestParam(required = false, defaultValue = "10") int pageSize,
                                                            @RequestParam(required = false, defaultValue = "name") String sortBy,
-                                                           @RequestParam(required = false, defaultValue = "asc") String sortDirection) {
+                                                           @RequestParam(required = false, defaultValue = "asc") String sortDirection,
+                                                           // filters — can be provided multiple times: ?status=AVAILABLE&status=FINISHED
+                                                           @RequestParam(required = false) List<String> status,
+                                                           @RequestParam(required = false) List<String> notificationFrequency) {
         if (pageNumber < 0) throw new BadRequestException("pageNumber must be >= 0");
         if (pageSize <= 0) throw new BadRequestException("pageSize must be > 0");
 
@@ -112,11 +115,35 @@ public class ProductController {
             throw new BadRequestException("Invalid sortBy field: " + sortBy + ". Allowed: " + ALLOWED_SORT_FIELDS);
         }
 
+        List<Status> statuses = null;
+        if (status != null && !status.isEmpty()) {
+            statuses = new ArrayList<>();
+            for (String s : status) {
+                try {
+                    statuses.add(Status.valueOf(s.toUpperCase()));
+                } catch (IllegalArgumentException e) {
+                    throw new BadRequestException("Invalid status value: " + s);
+                }
+            }
+        }
+
+        List<NotificationFrequency> frequencies = null;
+        if (notificationFrequency != null && !notificationFrequency.isEmpty()) {
+            frequencies = new ArrayList<>();
+            for (String nf : notificationFrequency) {
+                try {
+                    frequencies.add(NotificationFrequency.valueOf(nf.toUpperCase()));
+                } catch (IllegalArgumentException e) {
+                    throw new BadRequestException("Invalid notificationFrequency value: " + nf);
+                }
+            }
+        }
+
         // special-case computed field: percentageLeft
         if ("percentageLeft".equals(sortBy)) {
-            // Fetch ALL products for this user
+            // Fetch ALL products for this user with filters applied
             PageRequest fetchAll = PageRequest.of(0, Integer.MAX_VALUE);
-            Page<ProductResponse> allProducts = productService.getByUser(fetchAll, userId);
+            Page<ProductResponse> allProducts = productService.getByUser(fetchAll, userId, statuses, frequencies);
 
             // Sort all products by percentage
             List<ProductResponse> allSorted = new ArrayList<>(allProducts.getContent());
@@ -145,7 +172,7 @@ public class ProductController {
 
         Sort sort = sortDirection.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
         PageRequest pageable = PageRequest.of(pageNumber, pageSize, sort);
-        return ResponseEntity.ok(productService.getByUser(pageable, userId));
+        return ResponseEntity.ok(productService.getByUser(pageable, userId, statuses, frequencies));
     }
 
     @PutMapping("/{id}")
@@ -161,7 +188,6 @@ public class ProductController {
                 request.unit(),
                 request.purchaseDate(),
                 request.expirationDate(),
-                request.notificationFrequency() == null ? com.verf.ProdExp.entity.NotificationFrequency.MONTHLY : request.notificationFrequency(),
                 request.tags()
         );
         return ResponseEntity.ok(productService.update(id, toUpdate));
@@ -207,5 +233,36 @@ public class ProductController {
     public ResponseEntity<Void> delete(@PathVariable String id) {
         productService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/user/{userId}/recompute-statuses")
+    @PreAuthorize("hasRole('ADMIN') or @securityService.isUserMatching(#userId)")
+    public ResponseEntity<Map<String, Object>> recomputeStatusesForUser(@PathVariable String userId) {
+        int updated = productService.recomputeStatusesForUser(userId);
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("updatedCount", updated);
+        resp.put("userId", userId);
+        return ResponseEntity.ok(resp);
+    }
+
+    @GetMapping("/user/{userId}/search")
+    @PreAuthorize("hasRole('ADMIN') or @securityService.isUserMatching(#userId)")
+    public ResponseEntity<org.springframework.data.domain.Page<ProductResponse>> searchByUser(@PathVariable String userId,
+                                                                                             @RequestParam(required = false, defaultValue = "") String q,
+                                                                                             @RequestParam(required = false, defaultValue = "0") int pageNumber,
+                                                                                             @RequestParam(required = false, defaultValue = "10") int pageSize,
+                                                                                             @RequestParam(required = false, defaultValue = "name") String sortBy,
+                                                                                             @RequestParam(required = false, defaultValue = "asc") String sortDirection) {
+        if (pageNumber < 0) throw new BadRequestException("pageNumber must be >= 0");
+        if (pageSize <= 0) throw new BadRequestException("pageSize must be > 0");
+
+        if (!ALLOWED_SORT_FIELDS.contains(sortBy)) {
+            throw new BadRequestException("Invalid sortBy field: " + sortBy + ". Allowed: " + ALLOWED_SORT_FIELDS);
+        }
+
+        Sort sort = sortDirection.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        org.springframework.data.domain.PageRequest pageable = org.springframework.data.domain.PageRequest.of(pageNumber, pageSize, sort);
+
+        return ResponseEntity.ok(productService.searchByUser(pageable, userId, q == null ? "" : q));
     }
 }

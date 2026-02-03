@@ -15,10 +15,22 @@ export class AuthService {
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      throw new Error(error || `HTTP error! status: ${response.status}`);
+      // Read body once as text, then attempt to parse JSON from it
+      const text = await response.text();
+      // Try parse JSON
+      let parsed: any = null;
+      try {
+        parsed = text ? JSON.parse(text) : null;
+      } catch (e) {
+        parsed = null;
+      }
+
+      const msgFromJson = parsed && (parsed.message || parsed.error || parsed.msg);
+      const friendly = msgFromJson || text || response.statusText || `HTTP error ${response.status}`;
+      throw new Error(friendly);
     }
 
+    // Successful: read as JSON and return
     return response.json();
   }
 

@@ -39,7 +39,6 @@ export interface ProductRequest {
   unit: Unit;
   purchaseDate: string;
   expirationDate: string;
-  notificationFrequency?: NotificationFrequency;
   tags?: string[];
 }
 

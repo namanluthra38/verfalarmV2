@@ -14,6 +14,9 @@ export interface ProductListParams {
   pageSize?: number;
   sortBy?: string;
   sortDirection?: 'asc' | 'desc';
+  // optional filters: multiple values allowed
+  statuses?: string[];
+  notificationFrequencies?: string[];
 }
 
 export class ProductService {
@@ -84,11 +87,38 @@ export class ProductService {
     if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
     if (params?.sortDirection)
       queryParams.append('sortDirection', params.sortDirection);
+    // append filters (repeat param for multiple values)
+    if (params?.statuses) {
+      params.statuses.forEach(s => queryParams.append('status', s));
+    }
+    if (params?.notificationFrequencies) {
+      params.notificationFrequencies.forEach(nf => queryParams.append('notificationFrequency', nf));
+    }
 
     const query = queryParams.toString();
     const endpoint = `${API_CONFIG.ENDPOINTS.PRODUCTS.BY_USER(userId)}${
       query ? `?${query}` : ''
     }`;
+
+    return this.fetchApi<PageableResponse<ProductResponse>>(endpoint, token);
+  }
+
+  // Search products by name for a specific user (paginated)
+  static async searchUserProducts(
+    userId: string,
+    token: string,
+    q: string,
+    params?: { pageNumber?: number; pageSize?: number; sortBy?: string; sortDirection?: 'asc'|'desc' }
+  ): Promise<PageableResponse<ProductResponse>> {
+    const queryParams = new URLSearchParams();
+    if (params?.pageNumber !== undefined) queryParams.append('pageNumber', params.pageNumber.toString());
+    if (params?.pageSize !== undefined) queryParams.append('pageSize', params.pageSize.toString());
+    if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
+    if (params?.sortDirection) queryParams.append('sortDirection', params.sortDirection);
+    if (q !== undefined && q !== null && String(q).trim() !== '') queryParams.append('q', String(q));
+
+    const query = queryParams.toString();
+    const endpoint = `${API_CONFIG.ENDPOINTS.PRODUCTS.BY_USER(userId)}/search${query ? `?${query}` : ''}`;
 
     return this.fetchApi<PageableResponse<ProductResponse>>(endpoint, token);
   }
@@ -190,5 +220,26 @@ export class ProductService {
         headers: getAuthHeader(token),
       }
     );
+  }
+
+  static async recomputeStatuses(userId: string, token: string, signal?: AbortSignal): Promise<any> {
+    const endpoint = API_CONFIG.ENDPOINTS.PRODUCTS.RECOMPUTE_BY_USER(userId);
+    const response = await fetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(token),
+      },
+      signal,
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(err || `Failed to recompute statuses: ${response.status}`);
+    }
+
+    // try parse JSON, but tolerate empty body
+    const text = await response.text();
+    try { return text ? JSON.parse(text) : null; } catch(e) { return null; }
   }
 }

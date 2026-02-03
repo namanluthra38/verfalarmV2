@@ -2,10 +2,12 @@ import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { ProductService } from '../services/product.service';
-import { NotificationFrequency, ProductRequest } from '../types/api.types';
+import { ProductRequest } from '../types/api.types';
 import Navbar from '../components/Navbar';
-import { Save, ArrowLeft, X, Plus } from 'lucide-react';
+import Footer from '../components/Footer';
+import { Save, ArrowLeft, X, Plus, Check, RotateCcw } from 'lucide-react';
 import { Unit } from '../types/Unit';
+import { formatSignificant } from '../utils/format';
 
 export default function ProductForm() {
   const { id } = useParams();
@@ -15,18 +17,20 @@ export default function ProductForm() {
 
   const [formData, setFormData] = useState<ProductRequest>({
     name: '',
-    quantityBought: 1,
+    quantityBought: 0,
     quantityConsumed: 0,
     unit: Unit.PIECES,
     purchaseDate: new Date().toISOString().split('T')[0],
     expirationDate: '',
-    notificationFrequency: 'WEEKLY',
     tags: [],
   });
+
+  const [tempQuantity, setTempQuantity] = useState('');
 
   const [tagInput, setTagInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isQuantityLocked, setIsQuantityLocked] = useState(false);
 
   useEffect(() => {
     if (isEditMode && token && id) {
@@ -46,9 +50,13 @@ export default function ProductForm() {
         unit: (product.unit as unknown) as Unit,
         purchaseDate: product.purchaseDate,
         expirationDate: product.expirationDate,
-        notificationFrequency: product.notificationFrequency,
         tags: product.tags || [],
       });
+      // If editing an existing product, lock the quantity and show slider
+      if (product.quantityBought > 0) {
+        setTempQuantity(product.quantityBought.toString());
+        setIsQuantityLocked(true);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load product');
     }
@@ -57,6 +65,12 @@ export default function ProductForm() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!token) return;
+
+    // Do not allow submit until quantityBought has been confirmed/locked
+    if (!isQuantityLocked) {
+      setError('Please confirm the "Quantity Bought" before saving.');
+      return;
+    }
 
     setLoading(true);
     setError('');
@@ -73,6 +87,20 @@ export default function ProductForm() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLockQuantity = () => {
+    const quantity = parseFloat(tempQuantity);
+    if (quantity > 0) {
+      setFormData({ ...formData, quantityBought: quantity });
+      setIsQuantityLocked(true);
+    }
+  };
+
+  const handleResetQuantity = () => {
+    setIsQuantityLocked(false);
+    setTempQuantity('');
+    setFormData({ ...formData, quantityBought: 0, quantityConsumed: 0 });
   };
 
   const handleAddTag = () => {
@@ -93,6 +121,8 @@ export default function ProductForm() {
   };
 
   const unitOptions = Object.values(Unit) as Unit[];
+  const consumptionPercentage = (formData.quantityConsumed / (formData.quantityBought || 1)) * 100;
+  const sliderStep = Math.min(0.1, formData.quantityBought * 0.01);
 
   return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-amber-50 to-emerald-100">
@@ -133,40 +163,88 @@ export default function ProductForm() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Quantity Bought *
-                  </label>
-                  <input
-                      type="number"
-                      required
-                      min="0"
-                      step="0.1"
-                      value={formData.quantityBought}
-                      onChange={(e) =>
-                          setFormData({ ...formData, quantityBought: parseFloat(e.target.value) })
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {isQuantityLocked ? 'Quantity Progress' : 'Quantity Bought'} *
+                </label>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Quantity Consumed *
-                  </label>
-                  <input
-                      type="number"
-                      required
-                      min="0"
-                      step="0.1"
-                      value={formData.quantityConsumed}
-                      onChange={(e) =>
-                          setFormData({ ...formData, quantityConsumed: parseFloat(e.target.value) })
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
-                  />
-                </div>
+                {!isQuantityLocked ? (
+                    // Input Mode - Quantity Bought
+                    <div className="flex gap-3">
+                      <input
+                          type="number"
+                          required
+                          min="0.1"
+                          step="0.1"
+                          value={tempQuantity}
+                          onChange={(e) => setTempQuantity(e.target.value)}
+                          className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                          placeholder="Enter quantity"
+                      />
+                      <button
+                          type="button"
+                          onClick={handleLockQuantity}
+                          disabled={!tempQuantity || parseFloat(tempQuantity) <= 0}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-semibold shadow-md"
+                      >
+                        <Check className="w-5 h-5" />
+                        Confirm
+                      </button>
+                    </div>
+                ) : (
+                    // Slider Mode - Quantity Consumed
+                    <div className="space-y-2">
+                      <div className="relative">
+                        {/* Slider Track Container */}
+                        <div className="relative h-12 bg-gray-100 rounded-lg border-2 border-gray-300 overflow-hidden">
+                          {/* Filled portion */}
+                          <div
+                              className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-500 to-emerald-600 transition-all duration-200"
+                              style={{ width: `${consumptionPercentage}%` }}
+                          />
+
+                          {/* Slider Input (invisible but interactive) */}
+                          <input
+                              type="range"
+                              required
+                              min="0"
+                              max={formData.quantityBought}
+                              step={sliderStep}
+                              value={formData.quantityConsumed}
+                              onChange={(e) =>
+                                  setFormData({ ...formData, quantityConsumed: parseFloat(e.target.value) })
+                              }
+                              className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer z-10"
+                          />
+
+                          {/* Display Text */}
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+                          <span className="text-base font-bold text-gray-700">
+                            {formatSignificant(formData.quantityConsumed, 2)} / {formatSignificant(formData.quantityBought, 2)}
+                           </span>
+                           </div>
+                        </div>
+
+                        {/* Min/Max Labels */}
+                        <div className="flex justify-between mt-1 text-xs text-gray-600">
+                          <span>0</span>
+                          <span className="text-emerald-700 font-semibold">
+                          {Math.round(consumptionPercentage)}% consumed
+                        </span>
+                          <span>{formData.quantityBought.toFixed(1)}</span>
+                        </div>
+                      </div>
+
+                      <button
+                          type="button"
+                          onClick={handleResetQuantity}
+                          className="w-full bg-amber-500 hover:bg-amber-600 text-white px-3 py-2 rounded-lg transition flex items-center justify-center gap-2 text-sm font-semibold"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                        Reset Quantity
+                      </button>
+                    </div>
+                )}
               </div>
 
               <div>
@@ -225,26 +303,6 @@ export default function ProductForm() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Notification Frequency
-                </label>
-                <select
-                    value={formData.notificationFrequency}
-                    onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          notificationFrequency: e.target.value as NotificationFrequency,
-                        })
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
-                >
-                  <option value="DAILY">Daily</option>
-                  <option value="WEEKLY">Weekly</option>
-                  <option value="MONTHLY">Monthly</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Tags
                 </label>
                 <div className="flex gap-2 mb-3">
@@ -252,7 +310,7 @@ export default function ProductForm() {
                       type="text"
                       value={tagInput}
                       onChange={(e) => setTagInput(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddTag(); } }}
                       className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
                       placeholder="Add a tag"
                   />
@@ -288,7 +346,7 @@ export default function ProductForm() {
               <div className="flex gap-4 pt-4">
                 <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || !isQuantityLocked}
                     className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-200"
                 >
                   <Save className="w-5 h-5" />
@@ -302,9 +360,14 @@ export default function ProductForm() {
                   Cancel
                 </button>
               </div>
+
+              {!isQuantityLocked && (
+                  <div className="text-sm text-amber-700 mt-2">Please confirm the Quantity Bought using the Confirm button before saving.</div>
+              )}
             </form>
           </div>
         </div>
+        <Footer />
       </div>
   );
 }

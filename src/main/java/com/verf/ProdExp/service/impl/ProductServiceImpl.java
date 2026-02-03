@@ -5,12 +5,14 @@ import com.verf.ProdExp.dto.ProductResponse;
 import com.verf.ProdExp.dto.QuantityConsumedUpdateRequest;
 import com.verf.ProdExp.entity.Product;
 import com.verf.ProdExp.entity.NotificationFrequency;
+import com.verf.ProdExp.entity.Status;
 import com.verf.ProdExp.exception.BadRequestException;
 import com.verf.ProdExp.exception.ResourceNotFoundException;
 import com.verf.ProdExp.mapper.ProductMapper;
 import com.verf.ProdExp.repository.ProductRepository;
 import com.verf.ProdExp.service.ProductService;
 import com.verf.ProdExp.util.AnalysisUtil;
+import com.verf.ProdExp.util.NotificationFrequencyCalculator;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
@@ -32,6 +34,7 @@ public class ProductServiceImpl implements ProductService {
         Product product = ProductMapper.toEntity(request);
         // ensure status is correct
         product.setStatus(ProductMapper.computeStatus(product));
+        // nameLower/nameTokens are already set by ProductMapper.toEntity
         Product saved = repository.save(product);
         return ProductMapper.toResponse(saved);
     }
@@ -66,16 +69,21 @@ public class ProductServiceImpl implements ProductService {
 
         // copy updatable fields
         existing.setUserId(request.userId());
-        existing.setName(request.name());
+        // apply name fields (updates nameLower and recomputes tokens including tags)
+        ProductMapper.applyNameFields(existing, request.name());
         existing.setQuantityBought(request.quantityBought());
         existing.setQuantityConsumed(request.quantityConsumed());
         existing.setUnit(request.unit());
         existing.setPurchaseDate(request.purchaseDate());
         existing.setExpirationDate(request.expirationDate());
-        // copy notificationFrequency (default to MONTHLY when client omits)
-        existing.setNotificationFrequency(request.notificationFrequency() == null ? NotificationFrequency.MONTHLY : request.notificationFrequency());
+        // compute notificationFrequency using utility (do not rely on client)
+        existing.setNotificationFrequency(NotificationFrequencyCalculator.calculate(
+                request.purchaseDate(), request.expirationDate(), request.quantityBought(), request.quantityConsumed()
+        ));
         // copy tags (allow null or empty -> set null if empty to avoid storing empty arrays unnecessarily)
         existing.setTags(request.tags() == null || request.tags().isEmpty() ? null : List.copyOf(request.tags()));
+        // recompute tokens to include tags when tags updated via update
+        ProductMapper.recomputeNameTokens(existing);
 
         // recompute status
         existing.setStatus(ProductMapper.computeStatus(existing));
@@ -122,6 +130,20 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    public Page<ProductResponse> getByUser(Pageable pageable, String userId, @Nullable List<Status> statuses, @Nullable List<NotificationFrequency> frequencies) {
+        if (userId == null || userId.trim().isEmpty()) {
+            throw new BadRequestException("userId is required");
+        }
+
+        // if no filters provided, delegate to existing method
+        if ((statuses == null || statuses.isEmpty()) && (frequencies == null || frequencies.isEmpty())) {
+            return getByUser(pageable, userId);
+        }
+
+        return repository.findByUserIdWithFilters(userId, statuses, frequencies, pageable).map(ProductMapper::toResponse);
+    }
+
+    @Override
     public ProductResponse updateNotificationFrequency(String id, NotificationFrequency frequency) {
         if (frequency == null) throw new BadRequestException("notificationFrequency is required");
         Product existing = repository.findById(id)
@@ -136,6 +158,8 @@ public class ProductServiceImpl implements ProductService {
         Product existing = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with id '" + id + "' not found"));
         existing.setTags(tags == null || tags.isEmpty() ? null : List.copyOf(tags));
+        // recompute tokens including newly replaced tags
+        ProductMapper.recomputeNameTokens(existing);
         Product saved = repository.save(existing);
         return ProductMapper.toResponse(saved);
     }
@@ -149,6 +173,8 @@ public class ProductServiceImpl implements ProductService {
         if (existing.getTags() != null) set.addAll(existing.getTags());
         for (String t : tags) if (t != null && !t.isBlank()) set.add(t.trim());
         existing.setTags(set.isEmpty() ? null : new ArrayList<>(set));
+        // include lowercase tag tokens into nameTokens
+        ProductMapper.recomputeNameTokens(existing);
         Product saved = repository.save(existing);
         return ProductMapper.toResponse(saved);
     }
@@ -162,8 +188,60 @@ public class ProductServiceImpl implements ProductService {
         Set<String> set = new HashSet<>(existing.getTags());
         for (String t : tags) if (t != null && !t.isBlank()) set.remove(t.trim());
         existing.setTags(set.isEmpty() ? null : new ArrayList<>(set));
+        // remove any tokens that came only from deleted tags by recomputing tokens from name + remaining tags
+        ProductMapper.recomputeNameTokens(existing);
         Product saved = repository.save(existing);
         return ProductMapper.toResponse(saved);
+    }
+
+    @Override
+    public int recomputeStatusesForUser(String userId) {
+        if (userId == null || userId.trim().isEmpty()) {
+            throw new BadRequestException("userId is required");
+        }
+
+        // fetch all products for user
+        List<Product> products = repository.findAllByUserId(userId);
+        int changed = 0;
+        List<Product> toSave = new ArrayList<>();
+        for (Product p : products) {
+            Status computed = ProductMapper.computeStatus(p);
+            if (p.getStatus() != computed) {
+                p.setStatus(computed);
+                toSave.add(p);
+            }
+        }
+        if (!toSave.isEmpty()) {
+            repository.saveAll(toSave);
+            changed = toSave.size();
+        }
+        return changed;
+    }
+
+    @Override
+    public Page<ProductResponse> searchByUser(Pageable pageable, String userId, String query) {
+        if (userId == null || userId.trim().isEmpty()) throw new BadRequestException("userId is required");
+        // normalize query to lower-case and trim; empty query returns empty page
+        String q = query == null ? "" : query.trim().toLowerCase();
+        if (q.isEmpty()) {
+            // return empty page rather than all products to avoid expensive queries
+            return Page.empty(pageable);
+        }
+
+        // tokenize query similar to ProductMapper.tokenizeName
+        String[] parts = q.split("\\W+");
+        List<String> tokens = new ArrayList<>();
+        for (String p : parts) {
+            if (p == null) continue;
+            String t = p.trim();
+            if (t.isEmpty()) continue;
+            tokens.add(t);
+        }
+        List<String> effective = tokens.stream().filter(t -> t.length() >= 2).collect(Collectors.toList());
+        if (effective.isEmpty()) effective = tokens;
+
+        Page<Product> page = repository.searchByUserNameTokens(userId, effective, pageable);
+        return page.map(ProductMapper::toResponse);
     }
 
     private void validateRequest(ProductRequest request) {

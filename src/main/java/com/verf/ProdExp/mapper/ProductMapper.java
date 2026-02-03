@@ -8,6 +8,7 @@ import com.verf.ProdExp.entity.NotificationFrequency;
 import com.verf.ProdExp.util.NotificationFrequencyCalculator;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -22,6 +23,17 @@ public class ProductMapper {
 
         String nameLower = req.name() == null ? null : req.name().toLowerCase().trim();
         List<String> tokens = nameLower == null ? null : tokenizeName(nameLower);
+
+        // include tags tokens as well (if any)
+        if (req.tags() != null && !req.tags().isEmpty()) {
+            List<String> tagTokens = tokensFromTags(req.tags());
+            if (tokens == null) tokens = tagTokens;
+            else {
+                Set<String> merged = new LinkedHashSet<>(tokens);
+                merged.addAll(tagTokens);
+                tokens = new ArrayList<>(merged);
+            }
+        }
 
         return Product.builder()
                 .id(null)
@@ -72,16 +84,70 @@ public class ProductMapper {
         return Status.AVAILABLE;
     }
 
-    private static List<String> tokenizeName(String lower) {
-        // split on non-word characters, keep tokens length >= 1, dedupe preserving order
-        String[] parts = lower.split("\\W+");
-        Set<String> set = new LinkedHashSet<>();
-        for (String p : parts) {
-            if (p == null) continue;
-            String t = p.trim();
-            if (t.isEmpty()) continue;
-            set.add(t);
+    public static List<String> tokenizeName(String lowername) {
+        if (lowername == null) return List.of();
+
+        String normalized = lowername.toLowerCase().trim();
+
+        String[] words = normalized.split("\\W+");
+        Set<String> tokens = new LinkedHashSet<>();
+
+        for (String word : words) {
+            if (word.length() < 2) continue;
+
+            // generate prefixes: a, ap, app, appl, apple
+            for (int i = 1; i <= word.length(); i++) {
+                tokens.add(word.substring(0, i));
+            }
         }
-        return set.stream().collect(Collectors.toList());
+        return new ArrayList<>(tokens);
+    }
+
+    // generate tokens for tags: treat tag text similar to words in the name (prefix tokens)
+    public static List<String> tokensFromTags(List<String> tags) {
+        if (tags == null || tags.isEmpty()) return List.of();
+        Set<String> tokens = new LinkedHashSet<>();
+        for (String t : tags) {
+            if (t == null) continue;
+            String lower = t.toLowerCase().trim();
+            if (lower.isEmpty()) continue;
+            String[] words = lower.split("\\W+");
+            for (String w : words) {
+                if (w.length() < 2) continue;
+                tokens.add(w.substring(0, w.length()/2));
+                tokens.add(w);
+            }
+        }
+        return new ArrayList<>(tokens);
+    }
+
+    // Recompute combined nameTokens from product's nameLower and tags and set on product (idempotent)
+    public static void recomputeNameTokens(Product product) {
+        if (product == null) return;
+        Set<String> merged = new LinkedHashSet<>();
+        if (product.getNameLower() != null && !product.getNameLower().isBlank()) {
+            List<String> nameTokens = tokenizeName(product.getNameLower());
+            merged.addAll(nameTokens);
+        }
+        if (product.getTags() != null && !product.getTags().isEmpty()) {
+            List<String> tagTokens = tokensFromTags(product.getTags());
+            merged.addAll(tagTokens);
+        }
+        product.setNameTokens(merged.isEmpty() ? null : new ArrayList<>(merged));
+    }
+
+    // New helper: apply name fields (name, nameLower, nameTokens) to a Product entity.
+    // Centralizes tokenization logic so service/controller layers don't duplicate it.
+    public static void applyNameFields(Product product, String name) {
+        product.setName(name);
+        if (name == null) {
+            product.setNameLower(null);
+            product.setNameTokens(null);
+            return;
+        }
+        String nameLower = name.toLowerCase().trim();
+        product.setNameLower(nameLower);
+        // recompute tokens including any existing tags on the product
+        recomputeNameTokens(product);
     }
 }

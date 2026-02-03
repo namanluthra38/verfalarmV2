@@ -39,3 +39,4 @@ public interface ProductService {
     // Search products by name for a specific user (paginated). Query is matched against nameLower as a prefix for index-friendly searching.
     Page<ProductResponse> searchByUser(Pageable pageable, String userId, String query);
 }
+

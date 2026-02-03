@@ -34,8 +34,7 @@ public class ProductServiceImpl implements ProductService {
         Product product = ProductMapper.toEntity(request);
         // ensure status is correct
         product.setStatus(ProductMapper.computeStatus(product));
-        // ensure nameLower is stored for indexed search
-        if (product.getName() != null) product.setNameLower(product.getName().toLowerCase().trim());
+        // nameLower/nameTokens are already set by ProductMapper.toEntity
         Product saved = repository.save(product);
         return ProductMapper.toResponse(saved);
     }
@@ -70,7 +69,8 @@ public class ProductServiceImpl implements ProductService {
 
         // copy updatable fields
         existing.setUserId(request.userId());
-        existing.setName(request.name());
+        // apply name fields (updates nameLower and recomputes tokens including tags)
+        ProductMapper.applyNameFields(existing, request.name());
         existing.setQuantityBought(request.quantityBought());
         existing.setQuantityConsumed(request.quantityConsumed());
         existing.setUnit(request.unit());
@@ -82,9 +82,8 @@ public class ProductServiceImpl implements ProductService {
         ));
         // copy tags (allow null or empty -> set null if empty to avoid storing empty arrays unnecessarily)
         existing.setTags(request.tags() == null || request.tags().isEmpty() ? null : List.copyOf(request.tags()));
-
-        // ensure nameLower is updated when name changes
-        if (existing.getName() != null) existing.setNameLower(existing.getName().toLowerCase().trim());
+        // recompute tokens to include tags when tags updated via update
+        ProductMapper.recomputeNameTokens(existing);
 
         // recompute status
         existing.setStatus(ProductMapper.computeStatus(existing));
@@ -159,6 +158,8 @@ public class ProductServiceImpl implements ProductService {
         Product existing = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with id '" + id + "' not found"));
         existing.setTags(tags == null || tags.isEmpty() ? null : List.copyOf(tags));
+        // recompute tokens including newly replaced tags
+        ProductMapper.recomputeNameTokens(existing);
         Product saved = repository.save(existing);
         return ProductMapper.toResponse(saved);
     }
@@ -172,6 +173,8 @@ public class ProductServiceImpl implements ProductService {
         if (existing.getTags() != null) set.addAll(existing.getTags());
         for (String t : tags) if (t != null && !t.isBlank()) set.add(t.trim());
         existing.setTags(set.isEmpty() ? null : new ArrayList<>(set));
+        // include lowercase tag tokens into nameTokens
+        ProductMapper.recomputeNameTokens(existing);
         Product saved = repository.save(existing);
         return ProductMapper.toResponse(saved);
     }
@@ -185,6 +188,8 @@ public class ProductServiceImpl implements ProductService {
         Set<String> set = new HashSet<>(existing.getTags());
         for (String t : tags) if (t != null && !t.isBlank()) set.remove(t.trim());
         existing.setTags(set.isEmpty() ? null : new ArrayList<>(set));
+        // remove any tokens that came only from deleted tags by recomputing tokens from name + remaining tags
+        ProductMapper.recomputeNameTokens(existing);
         Product saved = repository.save(existing);
         return ProductMapper.toResponse(saved);
     }

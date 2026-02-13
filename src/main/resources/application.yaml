@@ -1,0 +1,52 @@
+#spring:
+#    mongodb:
+#      uri: "mongodb://admin_user:password@localhost:27018/db?authSource=admin"
+#      ssl:
+#        enabled: false
+#app:
+#  frontend:
+#    baseUrl: http://localhost:8080
+#  jwt:
+#    secret: ""
+#    expiration-ms: 3600000
+#server:
+#  port: 8080
+#
+#
+#  mail:
+#    host: smtp.gmail.com
+#    port: 587
+#    username:
+#    password:
+#    properties:
+#      mail:
+#        smtp:
+#          auth: true
+#          starttls:
+#            enable: true
+#
+
+spring:
+    mongodb:
+      # Prefer an environment-provided URI, but fall back to localhost:27018 explicitly so we don't accidentally connect to the default 27017
+      uri: ${MONGO_URL:mongodb://localhost:27018/db?authSource=admin}
+      ssl:
+        enabled: false
+      # ensure Spring Data will create indexes defined on entities (CompoundIndex etc.)
+      properties:
+        autoIndexCreation: true
+
+
+app:
+  backendBaseUrl: ${BACKEND_BASE_URL:http://localhost:8080}
+  frontendBaseUrl: ${FRONTEND_BASE_URL:http://localhost:5173}
+
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-ms: ${JWT_EXPIRATION_MS:3600000}
+
+server:
+  port: ${SERVER_PORT:8080}
+
+mail:
+  from: VERFALARM

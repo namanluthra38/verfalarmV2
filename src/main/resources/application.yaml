@@ -30,6 +30,7 @@ spring:
     mongodb:
       # Prefer an environment-provided URI, but fall back to localhost:27018 explicitly so we don't accidentally connect to the default 27017
       uri: ${MONGO_URL:mongodb://localhost:27018/db?authSource=admin}
+      database: verfalarm
       ssl:
         enabled: false
       # ensure Spring Data will create indexes defined on entities (CompoundIndex etc.)

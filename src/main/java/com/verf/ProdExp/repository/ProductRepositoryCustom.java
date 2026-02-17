@@ -10,6 +10,6 @@ import java.util.List;
 public interface ProductRepositoryCustom {
     Page<com.verf.ProdExp.entity.Product> findByUserIdWithFilters(String userId, List<Status> statuses, List<NotificationFrequency> frequencies, Pageable pageable);
 
-    // custom paginated search by indexed name tokens (AND semantics)
+    // Paginated search over nameTokens field using AND semantics for provided tokens
     Page<com.verf.ProdExp.entity.Product> searchByUserNameTokens(String userId, List<String> tokens, Pageable pageable);
 }

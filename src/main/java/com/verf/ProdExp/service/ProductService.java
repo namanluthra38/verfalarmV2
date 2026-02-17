@@ -34,7 +34,7 @@ public interface ProductService {
     ProductResponse addTags(String id, List<String> tags);
     // Remove tags if present
     ProductResponse removeTags(String id, List<String> tags);
-    Map<String, Object> AnalyzeById(String id);
+    Map<String, Object> analyzeById(String id);
 
     // Search products by name for a specific user (paginated). Query is matched against nameLower as a prefix for index-friendly searching.
     Page<ProductResponse> searchByUser(Pageable pageable, String userId, String query);

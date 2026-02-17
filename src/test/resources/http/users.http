@@ -1,0 +1,97 @@
+@baseUrl = http://localhost:8080
+
+# Test users and credentials
+@userEmail = namanluthra70@gmail.com
+@userPassword = secret123
+@adminEmail = admin@gmail.com
+@adminPassword = secret123
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OTgyNGI5MmJlNDA1ZDhkNWNjNjRlYmYiLCJpYXQiOjE3NzAxNDY5MjQsImV4cCI6MTc3MDE1MDUyNH0.9n3X35tQTU-Wos1zlK2nfs37oUUDdTH64hhEogSoNr8
+@userId = 69785d3f9332fb1f8c6c0740
+### Register a new user
+POST https://verfalarm.up.railway.app/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "fakeuser2@ggmail.com",
+  "password": "secret123",
+  "displayName": "Test User"
+}
+> {%
+    var body = JSON.parse(response.body || "{}");
+    client.global.set("registeredUserId", body.id || "");
+%}
+
+### Login as the new user (stores token and userId)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "fakeuser@example.com",
+  "password": "{{userPassword}}"
+}
+> {%
+    var body = JSON.parse(response.body || "{}");
+    client.global.set("token", body.token || "");
+    client.global.set("userId", body.userId || "");
+%}
+
+### Verify token is accepted with /me
+GET {{baseUrl}}/api/auth/me
+Accept: application/json
+Authorization: Bearer {{token}}
+
+
+### Get the user (self)
+GET {{baseUrl}}/api/users/{{userId}}
+Accept: application/json
+Authorization: Bearer {{token}}
+
+
+### Update the user (self)
+PUT {{baseUrl}}/api/users/{{userId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "displayName": "Updated Test User"
+}
+
+
+### Login as admin (stores adminToken)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+> {%
+    var body = JSON.parse(response.body || "{}");
+    client.global.set("adminToken", body.token || "");
+    client.global.set("adminId", body.userId || "");
+%}
+
+### Admin: get the user by id
+GET {{baseUrl}}/api/users/{{userId}}
+Accept: application/json
+Authorization: Bearer {{adminToken}}
+
+
+### Admin: delete the user
+DELETE {{baseUrl}}/api/users/{{userId}}
+Authorization: Bearer {{token}}
+
+
+### Verify deletion (should return 404)
+GET {{baseUrl}}/api/users/{{userId}}
+Accept: application/json
+Authorization: Bearer {{adminToken}}
+###
+GET {{baseUrl}}/api/reminder
+Accept: application/json
+Authorization: Bearer {{adminToken}}
+
+### reminder
+GET {{baseUrl}}/api/reminder
+Content-Type: application/json
+Authorization: Bearer {{token}}

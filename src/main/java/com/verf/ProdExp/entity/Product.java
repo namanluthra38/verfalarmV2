@@ -19,6 +19,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @CompoundIndexes({
+        // Supports (userId, nameTokens) queries for prefix/tag searches
         @CompoundIndex(
                 name = "user_name_tokens_idx",
                 def = "{'userId': 1, 'nameTokens': 1}"
@@ -32,7 +33,9 @@ public class Product {
     private String userId;
     @NonNull
     private String name;
+    // Normalized copy of name for case-insensitive search
     private String nameLower;
+    // Search tokens derived from name/tags (prefix-friendly)
     private List<String> nameTokens;
     @NonNull
     private Double quantityBought;
@@ -48,8 +51,10 @@ public class Product {
 
     private Status status;
 
+    // Controls reminder cadence for this product
     private NotificationFrequency notificationFrequency;
 
+    // Optional labels used for grouping and search token generation
     private List<String> tags;
 
     @CreatedDate

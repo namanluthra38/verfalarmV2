@@ -37,11 +37,12 @@ public class ProductController {
 
     private final ProductService productService;
 
-    // allowed sortable fields — keep in sync with Product entity/dto fields
+    // Allowed sort keys. "percentageLeft" is computed client-side in this controller.
+    // Keep in sync with exposed fields on ProductResponse.
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
             "name",
             "purchaseDate", "expirationDate", "createdAt",
-            "percentageLeft" // computed: (bought - consumed)/bought * 100
+            "percentageLeft"
     );
 
     private String getAuthenticatedUserId() {
@@ -60,7 +61,7 @@ public class ProductController {
         if (principal instanceof UserDetails) {
             return ((UserDetails) principal).getUsername();
         }
-        // fallback: try toString()
+        // Fallback: last resort string representation (providers may supply custom principals)
         if (principal != null) {
             return principal.toString();
         }
@@ -94,8 +95,8 @@ public class ProductController {
 
     @GetMapping("/analyze/{id}")
     @PreAuthorize("hasRole('ADMIN') or @securityService.isProductOwner(#id)")
-    public ResponseEntity<Map<String, Object>> AnalyzeById(@PathVariable String id) {
-        return ResponseEntity.ok(productService.AnalyzeById(id));
+    public ResponseEntity<Map<String, Object>> analyzeById(@PathVariable String id) {
+        return ResponseEntity.ok(productService.analyzeById(id));
     }
 
     @GetMapping("/user/{userId}")
@@ -105,7 +106,6 @@ public class ProductController {
                                                            @RequestParam(required = false, defaultValue = "10") int pageSize,
                                                            @RequestParam(required = false, defaultValue = "name") String sortBy,
                                                            @RequestParam(required = false, defaultValue = "asc") String sortDirection,
-                                                           // filters — can be provided multiple times: ?status=AVAILABLE&status=FINISHED
                                                            @RequestParam(required = false) List<String> status,
                                                            @RequestParam(required = false) List<String> notificationFrequency) {
         if (pageNumber < 0) throw new BadRequestException("pageNumber must be >= 0");
@@ -139,13 +139,13 @@ public class ProductController {
             }
         }
 
-        // special-case computed field: percentageLeft
+        // Handle computed sort key without persisting it on the entity
         if ("percentageLeft".equals(sortBy)) {
-            // Fetch ALL products for this user with filters applied
+            // Fetch all matching products (bounded only by integer max page size)
             PageRequest fetchAll = PageRequest.of(0, Integer.MAX_VALUE);
             Page<ProductResponse> allProducts = productService.getByUser(fetchAll, userId, statuses, frequencies);
 
-            // Sort all products by percentage
+            // Sort by (bought - consumed)/bought * 100
             List<ProductResponse> allSorted = new ArrayList<>(allProducts.getContent());
             allSorted.sort(Comparator.comparingDouble(p -> {
                 Double bought = p.quantityBought() == null ? 0.0 : p.quantityBought().doubleValue();
@@ -158,7 +158,7 @@ public class ProductController {
                 Collections.reverse(allSorted);
             }
 
-            // Now extract the requested page from the sorted list
+            // Materialize the requested page from the sorted list
             int start = pageNumber * pageSize;
             int end = Math.min(start + pageSize, allSorted.size());
             List<ProductResponse> pageContent = start < allSorted.size()
@@ -178,7 +178,7 @@ public class ProductController {
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or @securityService.isProductOwner(#id)")
     public ResponseEntity<ProductResponse> update(@PathVariable String id, @Valid @RequestBody ProductRequest request) {
-        // use helper to safely obtain authenticated user id (throws nicely if unauthenticated)
+        // Persist the authenticated userId regardless of client payload
         String currentUserId = getAuthenticatedUserId();
         ProductRequest toUpdate = ProductRequest.of(
                 currentUserId,

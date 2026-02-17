@@ -20,6 +20,6 @@ public interface ProductRepository extends MongoRepository<Product, String>, Pro
             String nameLower
     );
 
-    // New indexed search (prefix) exposed directly on repository for simple use-cases
+    // Indexed prefix search by normalized name for simple use-cases
     Page<Product> findByUserIdAndNameLowerStartingWith(String userId, String nameLower, Pageable pageable);
 }

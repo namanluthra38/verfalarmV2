@@ -24,7 +24,7 @@ public class ProductMapper {
         String nameLower = req.name() == null ? null : req.name().toLowerCase().trim();
         List<String> tokens = nameLower == null ? null : tokenizeName(nameLower);
 
-        // include tags tokens as well (if any)
+        // Merge tag tokens with name tokens (preserve order, avoid duplicates)
         if (req.tags() != null && !req.tags().isEmpty()) {
             List<String> tagTokens = tokensFromTags(req.tags());
             if (tokens == null) tokens = tagTokens;
@@ -73,7 +73,7 @@ public class ProductMapper {
     }
 
     public static Status computeStatus(Product p) {
-        // Entity enforces non-null for numeric fields and expirationDate, so compare directly
+        // Numeric fields and expirationDate are required on the entity; direct comparisons are safe
         double bought = p.getQuantityBought();
         double consumed = p.getQuantityConsumed();
         boolean finished = bought > 0.0 && Double.compare(consumed, bought) >= 0;
@@ -95,7 +95,7 @@ public class ProductMapper {
         for (String word : words) {
             if (word.length() < 2) continue;
 
-            // generate prefixes: a, ap, app, appl, apple
+            // Build all prefixes for quick prefix-based search (a, ap, app, ...)
             for (int i = 1; i <= word.length(); i++) {
                 tokens.add(word.substring(0, i));
             }
@@ -103,7 +103,7 @@ public class ProductMapper {
         return new ArrayList<>(tokens);
     }
 
-    // generate tokens for tags: treat tag text similar to words in the name (prefix tokens)
+    // Generate tokens for tags similar to name tokens (prefix-friendly)
     public static List<String> tokensFromTags(List<String> tags) {
         if (tags == null || tags.isEmpty()) return List.of();
         Set<String> tokens = new LinkedHashSet<>();
@@ -121,7 +121,7 @@ public class ProductMapper {
         return new ArrayList<>(tokens);
     }
 
-    // Recompute combined nameTokens from product's nameLower and tags and set on product (idempotent)
+    // Recompute and persist combined tokens from nameLower + tags (idempotent)
     public static void recomputeNameTokens(Product product) {
         if (product == null) return;
         Set<String> merged = new LinkedHashSet<>();
@@ -136,8 +136,7 @@ public class ProductMapper {
         product.setNameTokens(merged.isEmpty() ? null : new ArrayList<>(merged));
     }
 
-    // New helper: apply name fields (name, nameLower, nameTokens) to a Product entity.
-    // Centralizes tokenization logic so service/controller layers don't duplicate it.
+    // Centralize name normalization/token updates on the entity
     public static void applyNameFields(Product product, String name) {
         product.setName(name);
         if (name == null) {
@@ -147,7 +146,7 @@ public class ProductMapper {
         }
         String nameLower = name.toLowerCase().trim();
         product.setNameLower(nameLower);
-        // recompute tokens including any existing tags on the product
+        // Include existing tags when recomputing tokens
         recomputeNameTokens(product);
     }
 }

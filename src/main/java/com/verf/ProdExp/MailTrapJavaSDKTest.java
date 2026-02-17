@@ -10,6 +10,7 @@ import java.util.List;
 
 public class MailTrapJavaSDKTest {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(MailTrapJavaSDKTest.class);
     private static final String TOKEN = "ded30c614d693193664962ba0cac6a4a";
 
     public static void main(String[] args) {
@@ -29,9 +30,9 @@ public class MailTrapJavaSDKTest {
                 .build();
 
         try {
-            System.out.println(client.send(mail));
+            log.info("Mailtrap send response: {}", client.send(mail));
         } catch (Exception e) {
-            System.out.println("Caught exception : " + e);
+            log.error("Mailtrap send failed", e);
         }
     }
 }

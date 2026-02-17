@@ -47,7 +47,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Map<String, Object> AnalyzeById(String id) {
+    public Map<String, Object> analyzeById(String id) {
         Product p = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with id '" + id + "' not found"));
         return AnalysisUtil.analyze(p);
@@ -67,25 +67,23 @@ public class ProductServiceImpl implements ProductService {
         Product existing = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with id '" + id + "' not found"));
 
-        // copy updatable fields
+        // Copy fields that can change and normalize name/token fields in one place
         existing.setUserId(request.userId());
-        // apply name fields (updates nameLower and recomputes tokens including tags)
         ProductMapper.applyNameFields(existing, request.name());
         existing.setQuantityBought(request.quantityBought());
         existing.setQuantityConsumed(request.quantityConsumed());
         existing.setUnit(request.unit());
         existing.setPurchaseDate(request.purchaseDate());
         existing.setExpirationDate(request.expirationDate());
-        // compute notificationFrequency using utility (do not rely on client)
+        // Compute notification frequency server-side for consistency
         existing.setNotificationFrequency(NotificationFrequencyCalculator.calculate(
                 request.purchaseDate(), request.expirationDate(), request.quantityBought(), request.quantityConsumed()
         ));
-        // copy tags (allow null or empty -> set null if empty to avoid storing empty arrays unnecessarily)
+        // Normalize tags (persist null for empty) and recompute tokens to include tags
         existing.setTags(request.tags() == null || request.tags().isEmpty() ? null : List.copyOf(request.tags()));
-        // recompute tokens to include tags when tags updated via update
         ProductMapper.recomputeNameTokens(existing);
 
-        // recompute status
+        // Recompute status after all field changes
         existing.setStatus(ProductMapper.computeStatus(existing));
 
         Product saved = repository.save(existing);
@@ -114,7 +112,7 @@ public class ProductServiceImpl implements ProductService {
         }
 
         existing.setQuantityConsumed(request.quantityConsumed());
-        // recompute status after change
+        // Recompute status after quantity change
         existing.setStatus(ProductMapper.computeStatus(existing));
 
         Product saved = repository.save(existing);
@@ -173,7 +171,7 @@ public class ProductServiceImpl implements ProductService {
         if (existing.getTags() != null) set.addAll(existing.getTags());
         for (String t : tags) if (t != null && !t.isBlank()) set.add(t.trim());
         existing.setTags(set.isEmpty() ? null : new ArrayList<>(set));
-        // include lowercase tag tokens into nameTokens
+        // Include tag tokens in nameTokens
         ProductMapper.recomputeNameTokens(existing);
         Product saved = repository.save(existing);
         return ProductMapper.toResponse(saved);
@@ -188,7 +186,7 @@ public class ProductServiceImpl implements ProductService {
         Set<String> set = new HashSet<>(existing.getTags());
         for (String t : tags) if (t != null && !t.isBlank()) set.remove(t.trim());
         existing.setTags(set.isEmpty() ? null : new ArrayList<>(set));
-        // remove any tokens that came only from deleted tags by recomputing tokens from name + remaining tags
+        // Recompute tokens from name + remaining tags after removal
         ProductMapper.recomputeNameTokens(existing);
         Product saved = repository.save(existing);
         return ProductMapper.toResponse(saved);
@@ -200,7 +198,7 @@ public class ProductServiceImpl implements ProductService {
             throw new BadRequestException("userId is required");
         }
 
-        // fetch all products for user
+        // Fetch all products for the user and update only when status changes
         List<Product> products = repository.findAllByUserId(userId);
         int changed = 0;
         List<Product> toSave = new ArrayList<>();
@@ -221,14 +219,13 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public Page<ProductResponse> searchByUser(Pageable pageable, String userId, String query) {
         if (userId == null || userId.trim().isEmpty()) throw new BadRequestException("userId is required");
-        // normalize query to lower-case and trim; empty query returns empty page
+        // Normalize query; return empty page to avoid full-scan on empty input
         String q = query == null ? "" : query.trim().toLowerCase();
         if (q.isEmpty()) {
-            // return empty page rather than all products to avoid expensive queries
             return Page.empty(pageable);
         }
 
-        // tokenize query similar to ProductMapper.tokenizeName
+        // Tokenize like ProductMapper.tokenizeName
         String[] parts = q.split("\\W+");
         List<String> tokens = new ArrayList<>();
         for (String p : parts) {

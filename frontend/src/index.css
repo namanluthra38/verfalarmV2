@@ -1,3 +1,33 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+
+    --app-bg: 236 253 245;   /* emerald-50 */
+    --app-text: 6 78 59;     /* emerald-900 */
+  }
+
+  .dark {
+    color-scheme: dark;
+
+    /* Premium dark palette */
+    --app-bg: 15 23 42;      /* slate-900 */
+    --app-text: 226 232 240; /* slate-200 */
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  body {
+    background-color: rgb(var(--app-bg));
+    color: rgb(var(--app-text));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}

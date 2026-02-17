@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { ProductService } from '../services/product.service';
 import { ProductResponse, ProductAnalysis } from '../types/api.types';
 import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 import {
   ArrowLeft,
   Edit,
@@ -91,35 +92,41 @@ export default function ProductDetail() {
 
   if (loading) {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-amber-50">
+        <div className="min-h-screen flex flex-col bg-gradient-to-br from-emerald-50 via-white to-amber-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
           <Navbar />
-          <div className="flex justify-center items-center h-96">
-            <div className="text-center space-y-4">
-              <div className="animate-spin h-12 w-12 border-4 border-emerald-600 border-t-transparent rounded-full mx-auto" />
-              <p className="text-emerald-700 font-medium">Loading product details...</p>
+          <main className="flex-1">
+            <div className="flex justify-center items-center h-96">
+              <div className="text-center space-y-4">
+                <div className="animate-spin h-12 w-12 border-4 border-emerald-600 border-t-transparent rounded-full mx-auto" />
+                <p className="text-emerald-700 dark:text-emerald-300 font-medium">Loading product details...</p>
+              </div>
             </div>
-          </div>
+          </main>
+          <Footer />
         </div>
     );
   }
 
   if (!product || !analysis) {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-amber-50">
+        <div className="min-h-screen flex flex-col bg-gradient-to-br from-emerald-50 via-white to-amber-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
           <Navbar />
-          <div className="max-w-3xl mx-auto p-6">
-            <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-8 text-center">
-              <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-red-800 mb-2">Product Not Found</h2>
-              <p className="text-red-600 mb-6">{error || 'This product could not be loaded'}</p>
-              <button
-                  onClick={() => navigate('/dashboard')}
-                  className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
-              >
-                Return to Dashboard
-              </button>
+          <main className="flex-1">
+            <div className="max-w-3xl mx-auto p-6">
+              <div className="bg-red-50 dark:bg-red-900/30 border-2 border-red-200 dark:border-red-800 rounded-2xl p-8 text-center">
+                <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                <h2 className="text-2xl font-bold text-red-800 dark:text-red-200 mb-2">Product Not Found</h2>
+                <p className="text-red-600 dark:text-red-300 mb-6">{error || 'This product could not be loaded'}</p>
+                <button
+                    onClick={() => navigate('/dashboard')}
+                    className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+                >
+                  Return to Dashboard
+                </button>
+              </div>
             </div>
-          </div>
+          </main>
+          <Footer />
         </div>
     );
   }
@@ -143,27 +150,27 @@ export default function ProductDetail() {
         return {
           label: 'Expired',
           color: 'red',
-          bgColor: 'bg-red-100',
-          textColor: 'text-red-800',
-          borderColor: 'border-red-200',
+          bgColor: 'bg-red-100 dark:bg-red-900/30',
+          textColor: 'text-red-800 dark:text-red-200',
+          borderColor: 'border-red-200 dark:border-red-800',
           Icon: AlertTriangle
         };
       case 'FINISHED':
         return {
           label: 'Finished',
           color: 'blue',
-          bgColor: 'bg-blue-100',
-          textColor: 'text-blue-800',
-          borderColor: 'border-blue-200',
+          bgColor: 'bg-blue-100 dark:bg-blue-900/30',
+          textColor: 'text-blue-800 dark:text-blue-200',
+          borderColor: 'border-blue-200 dark:border-blue-800',
           Icon: CheckCircle
         };
       default:
         return {
           label: 'Active',
           color: 'emerald',
-          bgColor: 'bg-emerald-100',
-          textColor: 'text-emerald-800',
-          borderColor: 'border-emerald-200',
+          bgColor: 'bg-emerald-100 dark:bg-emerald-900/30',
+          textColor: 'text-emerald-800 dark:text-emerald-200',
+          borderColor: 'border-emerald-200 dark:border-emerald-800',
           Icon: CheckCircle
         };
     }
@@ -187,15 +194,16 @@ export default function ProductDetail() {
   const hasChanged = consumedInput !== (product.quantityConsumed ?? 0);
 
   return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-amber-50">
+      <div className="min-h-screen flex flex-col bg-gradient-to-br from-emerald-50 via-white to-amber-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
         <Navbar />
 
+        <main className="flex-1">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Breadcrumb Navigation */}
           <div className="mb-6">
             <button
                 onClick={() => navigate('/dashboard')}
-                className="group flex items-center gap-2 text-emerald-700 hover:text-emerald-800 font-medium transition-colors"
+                className="group flex items-center gap-2 text-emerald-700 dark:text-emerald-300 hover:text-emerald-800 dark:hover:text-emerald-200 font-medium transition-colors"
             >
               <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
               <span>Back to Dashboard</span>
@@ -204,12 +212,12 @@ export default function ProductDetail() {
 
           {/* Error Banner */}
           {error && (
-              <div className="mb-6 bg-red-50 border-l-4 border-red-500 rounded-r-xl p-4 shadow-sm animate-shake">
+              <div className="mb-6 bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 dark:border-red-700 rounded-r-xl p-4 shadow-sm animate-shake">
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                   <div className="flex-1">
-                    <h3 className="font-semibold text-red-800">Error</h3>
-                    <p className="text-red-700 text-sm mt-1">{error}</p>
+                    <h3 className="font-semibold text-red-800 dark:text-red-200">Error</h3>
+                    <p className="text-red-700 dark:text-red-300 text-sm mt-1">{error}</p>
                   </div>
                   <button
                       onClick={() => setError('')}
@@ -225,7 +233,7 @@ export default function ProductDetail() {
             {/* Left Column - Main Content */}
             <div className="lg:col-span-2 space-y-6">
               {/* Hero Card */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 overflow-hidden">
                 <div className="p-8">
                   <div className="flex items-start justify-between mb-6">
                     <div className="flex items-start gap-6 flex-1">
@@ -239,8 +247,8 @@ export default function ProductDetail() {
                       {/* Product Info */}
                       <div className="flex-1">
                         <div className="mb-3">
-                          <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
-                          <p className="text-sm text-gray-500">
+                          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100 mb-2">{product.name}</h1>
+                          <p className="text-sm text-gray-500 dark:text-slate-400">
                             Added {formatDateISO(product.createdAt)}
                           </p>
                         </div>
@@ -252,7 +260,7 @@ export default function ProductDetail() {
                         </span>
 
                           {/* Notification frequency tag (display like status) */}
-                          <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200`}>
+                            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-200 dark:border-indigo-800">
                             <Clock className="w-4 h-4" />
                             {(() => {
                               const nf = notificationFrequency;
@@ -271,7 +279,7 @@ export default function ProductDetail() {
                                       ? 'bg-red-100 text-red-800 border border-red-200'
                                       : urgencyLevel === 'warning'
                                           ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                                          : 'bg-gray-100 text-gray-700 border border-gray-200'
+                                      : 'bg-gray-100 text-gray-700 border border-gray-200 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600'
                               }`}>
                              <Clock className="w-4 h-4" />
                                 {daysUntilExpiration} days left
@@ -311,7 +319,7 @@ export default function ProductDetail() {
               </div>
 
               {/* Consumption Tracker */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 overflow-hidden">
                 <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 p-6">
                   <h2 className="text-xl font-bold text-white flex items-center gap-2">
                     <Target className="w-6 h-6" />
@@ -323,14 +331,14 @@ export default function ProductDetail() {
                 <div className="p-6">
                   <div className="space-y-6">
                     {/* Current Progress Display */}
-                    <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl p-6 border border-emerald-200">
+                    <div className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-slate-900 dark:to-slate-800 rounded-xl p-6 border border-emerald-200 dark:border-slate-700">
                       <div className="flex items-baseline justify-between mb-3">
-                        <span className="text-sm font-medium text-gray-700">Current Progress</span>
-                        <span className="text-3xl font-bold text-emerald-700">
+                        <span className="text-sm font-medium text-gray-700 dark:text-slate-300">Current Progress</span>
+                        <span className="text-3xl font-bold text-emerald-700 dark:text-emerald-300">
                         {sliderPercent.toFixed(0)}%
                       </span>
                       </div>
-                      <div className="flex items-baseline justify-between text-sm text-gray-600">
+                      <div className="flex items-baseline justify-between text-sm text-gray-600 dark:text-slate-300">
                         <span>{formatQuantity(consumedInput, product.unit, 2)} consumed</span>
                         <span>{formatQuantity(remainingQuantity, product.unit, 2)} left</span>
                       </div>
@@ -338,13 +346,13 @@ export default function ProductDetail() {
 
                     {/* Interactive Slider */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-4">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-4">
                         Adjust consumption amount
                       </label>
 
                       <div className="relative">
                         {/* Progress background */}
-                        <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                        <div className="h-3 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
                           <div
                               className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 transition-all duration-300 ease-out rounded-full"
                               style={{ width: `${sliderPercent}%` }}
@@ -376,7 +384,7 @@ export default function ProductDetail() {
                         className={`w-full py-4 rounded-xl font-semibold text-white transition-all duration-200 ${
                             hasChanged && !updating
                                 ? 'bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
-                                : 'bg-gray-300 cursor-not-allowed'
+                            : 'bg-gray-300 dark:bg-slate-700 dark:text-slate-300 cursor-not-allowed'
                         }`}
                     >
                       {updating ? (
@@ -399,7 +407,7 @@ export default function ProductDetail() {
             <div className="space-y-6">
               {/* Smart Recommendations */}
               {!isExpired && recommendedDailyToFinish && (
-                  <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl shadow-lg border border-purple-200 overflow-hidden">
+                  <div className="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-slate-900 dark:to-slate-800 rounded-2xl shadow-lg border border-purple-200 dark:border-purple-800 overflow-hidden">
                     <div className="bg-gradient-to-r from-purple-500 to-indigo-500 p-6">
                       <div className="flex items-center gap-2 text-white">
                         <Sparkles className="w-6 h-6" />
@@ -408,19 +416,19 @@ export default function ProductDetail() {
                     </div>
 
                     <div className="p-6">
-                      <p className="text-sm text-gray-600 mb-4">
+                      <p className="text-sm text-gray-600 dark:text-slate-300 mb-4">
                         To finish before expiration:
                       </p>
-                      <div className="bg-white rounded-xl p-5 border-2 border-purple-200 mb-4">
-                        <p className="text-4xl font-bold text-purple-700 mb-1">
+                      <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border-2 border-purple-200 dark:border-purple-700 mb-4">
+                        <p className="text-4xl font-bold text-purple-700 dark:text-purple-300 mb-1">
                           {formatQuantity(recommendedDailyToFinish, product.unit, 2).split(' ')[0]}
                         </p>
-                        <p className="text-sm text-gray-600">{formatQuantity(recommendedDailyToFinish, product.unit, 2).split(' ').slice(1).join(' ')} per day</p>
+                        <p className="text-sm text-gray-600 dark:text-slate-300">{formatQuantity(recommendedDailyToFinish, product.unit, 2).split(' ').slice(1).join(' ')} per day</p>
                       </div>
 
                       {estimatedFinishDate && (
-                          <div className="flex items-start gap-2 text-sm text-gray-700 bg-purple-50 rounded-lg p-3">
-                            <Calendar className="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />
+                          <div className="flex items-start gap-2 text-sm text-gray-700 dark:text-slate-200 bg-purple-50 dark:bg-slate-800 rounded-lg p-3">
+                            <Calendar className="w-4 h-4 text-purple-600 dark:text-purple-300 mt-0.5 flex-shrink-0" />
                             <p>
                               Expected finish date: <strong>{formatDateISO(estimatedFinishDate)}</strong>
                             </p>
@@ -431,9 +439,9 @@ export default function ProductDetail() {
               )}
 
               {/* Quick Actions */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 overflow-hidden">
                 <div className="p-6">
-                  <h3 className="font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-slate-100 mb-4">Quick Actions</h3>
                   <div className="space-y-3">
                     <button
                         onClick={() => navigate(`/products/${id}/analysis`)}
@@ -466,30 +474,30 @@ export default function ProductDetail() {
               </div>
 
               {/* Product Info */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 overflow-hidden">
                 <div className="p-6">
-                  <h3 className="font-semibold text-gray-900 mb-4">Product Details</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-slate-100 mb-4">Product Details</h3>
                   <dl className="space-y-3 text-sm">
-                    <div className="flex justify-between py-2 border-b border-gray-100">
-                      <dt className="text-gray-600">Total Quantity</dt>
-                      <dd className="font-semibold text-gray-900">{maxQuantity.toFixed(2)} {product.unit}</dd>
+                    <div className="flex justify-between py-2 border-b border-gray-100 dark:border-slate-700">
+                      <dt className="text-gray-600 dark:text-slate-300">Total Quantity</dt>
+                      <dd className="font-semibold text-gray-900 dark:text-slate-100">{maxQuantity.toFixed(2)} {product.unit}</dd>
                     </div>
                     {product.expirationDate && (
-                        <div className="flex justify-between py-2 border-b border-gray-100">
-                          <dt className="text-gray-600">Expiration Date</dt>
-                          <dd className="font-semibold text-gray-900">
+                        <div className="flex justify-between py-2 border-b border-gray-100 dark:border-slate-700">
+                          <dt className="text-gray-600 dark:text-slate-300">Expiration Date</dt>
+                          <dd className="font-semibold text-gray-900 dark:text-slate-100">
                             {formatDateISO(product.expirationDate)}
                           </dd>
                         </div>
                     )}
                     {/* Purchased Date moved into Product Details */}
-                    <div className="flex justify-between py-2 border-b border-gray-100">
-                      <dt className="text-gray-600">Purchased</dt>
-                      <dd className="font-semibold text-gray-900">{formatDateISO(product.purchaseDate)}</dd>
+                    <div className="flex justify-between py-2 border-b border-gray-100 dark:border-slate-700">
+                      <dt className="text-gray-600 dark:text-slate-300">Purchased</dt>
+                      <dd className="font-semibold text-gray-900 dark:text-slate-100">{formatDateISO(product.purchaseDate)}</dd>
                     </div>
                     <div className="flex justify-between py-2">
-                      <dt className="text-gray-600">Created</dt>
-                      <dd className="font-semibold text-gray-900">
+                      <dt className="text-gray-600 dark:text-slate-300">Created</dt>
+                      <dd className="font-semibold text-gray-900 dark:text-slate-100">
                         {formatDateISO(product.createdAt)}
                       </dd>
                     </div>
@@ -499,14 +507,15 @@ export default function ProductDetail() {
             </div>
           </div>
         </div>
+        </main>
 
         {/* Delete Confirmation Modal */}
-        {showDeleteConfirm && (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-scale-in">
+         {showDeleteConfirm && (
+             <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl dark:shadow-black/40 max-w-md w-full overflow-hidden animate-scale-in">
                 <div className="bg-red-500 p-6">
                   <div className="flex items-center gap-3 text-white">
-                    <div className="p-3 bg-white/20 rounded-full">
+                    <div className="p-3 bg-white/20 dark:bg-slate-700/20 rounded-full">
                       <AlertTriangle className="w-6 h-6" />
                     </div>
                     <h3 className="text-xl font-bold">Delete Product</h3>
@@ -514,14 +523,14 @@ export default function ProductDetail() {
                 </div>
 
                 <div className="p-6">
-                  <p className="text-gray-700 mb-6">
+                  <p className="text-gray-700 dark:text-slate-300 mb-6">
                     Are you sure you want to delete <strong>{product.name}</strong>? This action cannot be undone.
                   </p>
 
                   <div className="flex gap-3">
                     <button
                         onClick={() => setShowDeleteConfirm(false)}
-                        className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
+                        className="flex-1 px-4 py-3 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 font-semibold rounded-xl transition-colors"
                     >
                       Cancel
                     </button>
@@ -534,10 +543,11 @@ export default function ProductDetail() {
                   </div>
                 </div>
               </div>
-            </div>
-        )}
-      </div>
-  );
+             </div>
+         )}
+         <Footer />
+       </div>
+   );
 }
 
 function StatCard({
@@ -560,25 +570,27 @@ function StatCard({
     blue: 'bg-blue-100 text-blue-700 border-blue-200',
     red: 'bg-red-100 text-red-700 border-red-200',
     amber: 'bg-amber-100 text-amber-700 border-amber-200',
-    gray: 'bg-gray-100 text-gray-700 border-gray-200',
+    gray: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600',
   };
 
   return (
       <div
-          className="bg-white rounded-xl p-4 border border-gray-200 hover:shadow-md transition-shadow cursor-pointer relative"
+          className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700 hover:shadow-md transition-shadow cursor-pointer relative"
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
       >
         <div className={`inline-flex items-center justify-center p-2 rounded-lg mb-2 ${colorClasses[color as keyof typeof colorClasses]}`}>
           <Icon className="w-5 h-5" />
         </div>
-        <p className="text-xs text-gray-600 font-medium mb-1">{label}</p>
-        <p className="text-xl font-bold text-gray-900">{isHovered && hoverValue ? hoverValue : value}</p>
+        <p className="text-xs text-gray-600 dark:text-slate-300 font-medium mb-1">{label}</p>
+        <p className="text-xl font-bold text-gray-900 dark:text-slate-100">{isHovered && hoverValue ? hoverValue : value}</p>
 
         {/* Tooltip indicator */}
         {hoverValue && (
-            <div className="absolute top-2 right-2 text-gray-400 text-xs">
-              ⓘ
+            <div className="absolute top-2 right-2 text-gray-400 dark:text-slate-500 text-xs">
+              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-slate-300 dark:border-slate-600 text-[10px] font-semibold bg-white/80 dark:bg-slate-700/80">
+                i
+              </span>
             </div>
         )}
       </div>

@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { ProductService } from '../services/product.service';
 import { ProductAnalysis, ProductResponse } from '../types/api.types.ts';
 import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 import {
     ArrowLeft,
     TrendingUp,
@@ -50,35 +51,41 @@ export default function ProductAnalysisPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-amber-50">
+            <div className="min-h-screen flex flex-col bg-gradient-to-br from-emerald-50 via-white to-amber-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
                 <Navbar />
-                <div className="flex justify-center items-center h-96">
-                    <div className="text-center space-y-4">
-                        <div className="animate-spin h-12 w-12 border-4 border-emerald-600 border-t-transparent rounded-full mx-auto" />
-                        <p className="text-emerald-700 font-medium">Analyzing product data...</p>
+                <main className="flex-1">
+                    <div className="flex justify-center items-center h-96">
+                        <div className="text-center space-y-4">
+                            <div className="animate-spin h-12 w-12 border-4 border-emerald-600 border-t-transparent rounded-full mx-auto" />
+                            <p className="text-emerald-700 dark:text-emerald-300 font-medium">Analyzing product data...</p>
+                        </div>
                     </div>
-                </div>
+                </main>
+                <Footer />
             </div>
         );
     }
 
     if (!analysis || !product) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-amber-50">
+            <div className="min-h-screen flex flex-col bg-gradient-to-br from-emerald-50 via-white to-amber-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
                 <Navbar />
-                <div className="max-w-3xl mx-auto p-6">
-                    <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-8 text-center">
-                        <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-                        <h2 className="text-2xl font-bold text-red-800 mb-2">Analysis Unavailable</h2>
-                        <p className="text-red-600 mb-6">{error || 'Could not load analysis data'}</p>
-                        <button
-                            onClick={() => navigate(-1)}
-                            className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
-                        >
-                            Go Back
-                        </button>
+                <main className="flex-1">
+                    <div className="max-w-3xl mx-auto p-6">
+                        <div className="bg-red-50 dark:bg-red-900/30 border-2 border-red-200 dark:border-red-800 rounded-2xl p-8 text-center">
+                            <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                            <h2 className="text-2xl font-bold text-red-800 mb-2">Analysis Unavailable</h2>
+                            <p className="text-red-600 dark:text-red-300 mb-6">{error || 'Could not load analysis data'}</p>
+                            <button
+                                onClick={() => navigate(-1)}
+                                className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+                            >
+                                Go Back
+                            </button>
+                        </div>
                     </div>
-                </div>
+                </main>
+                <Footer />
             </div>
         );
     }
@@ -139,9 +146,9 @@ export default function ProductAnalysisPage() {
                 title: 'Product Has Expired',
                 icon: XCircle,
                 gradient: 'from-red-500 to-rose-500',
-                bgColor: 'bg-red-50',
-                borderColor: 'border-red-200',
-                textColor: 'text-red-800',
+                bgColor: 'bg-red-50 dark:bg-red-900/20',
+                borderColor: 'border-red-200 dark:border-red-800',
+                textColor: 'text-red-800 dark:text-red-200',
                 iconBg: 'bg-red-100',
                 iconColor: 'text-red-600',
             };
@@ -150,9 +157,9 @@ export default function ProductAnalysisPage() {
                 title: 'Product Fully Consumed',
                 icon: CheckCircle,
                 gradient: 'from-blue-500 to-indigo-500',
-                bgColor: 'bg-blue-50',
-                borderColor: 'border-blue-200',
-                textColor: 'text-blue-800',
+                bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+                borderColor: 'border-blue-200 dark:border-blue-800',
+                textColor: 'text-blue-800 dark:text-blue-200',
                 iconBg: 'bg-blue-100',
                 iconColor: 'text-blue-600',
             };
@@ -161,9 +168,9 @@ export default function ProductAnalysisPage() {
                 title: 'Product Available',
                 icon: CheckCircle,
                 gradient: 'from-emerald-500 to-green-500',
-                bgColor: 'bg-emerald-50',
-                borderColor: 'border-emerald-200',
-                textColor: 'text-emerald-800',
+                bgColor: 'bg-emerald-50 dark:bg-emerald-900/20',
+                borderColor: 'border-emerald-200 dark:border-emerald-800',
+                textColor: 'text-emerald-800 dark:text-emerald-200',
                 iconBg: 'bg-emerald-100',
                 iconColor: 'text-emerald-600',
             };
@@ -199,15 +206,15 @@ export default function ProductAnalysisPage() {
     const firstStatLabel = 'Consumed';
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-amber-50">
+        <div className="min-h-screen flex flex-col bg-gradient-to-br from-emerald-50 via-white to-amber-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
             <Navbar />
-
+            <main className="flex-1">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Breadcrumb Navigation */}
                 <div className="mb-6">
                     <button
                         onClick={() => navigate(-1)}
-                        className="group flex items-center gap-2 text-emerald-700 hover:text-emerald-800 font-medium transition-colors"
+                        className="group flex items-center gap-2 text-emerald-700 dark:text-emerald-300 hover:text-emerald-800 dark:hover:text-emerald-200 font-medium transition-colors"
                     >
                         <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                         <span>Back to Product</span>
@@ -216,7 +223,7 @@ export default function ProductAnalysisPage() {
 
                 <div className="space-y-6">
                     {/* Hero Status Card */}
-                    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg dark:shadow-black/40 border border-gray-100 dark:border-slate-700 overflow-hidden">
                         <div className={`bg-gradient-to-r ${statusConfig.gradient} p-8`}>
                             <div className="flex items-start gap-4">
                                 <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
@@ -231,7 +238,7 @@ export default function ProductAnalysisPage() {
                         </div>
 
                         {/* Quick Stats Bar - forced 2x2 */}
-                        <div className="grid grid-cols-2 gap-px bg-gray-200">
+                        <div className="grid grid-cols-2 gap-px bg-gray-200 dark:bg-slate-700">
                             {
                                 // Prepare a safe hover string for consumed quantity.
                                 // Prefer calculated consumedQuantity, fall back to product.quantityConsumed or product.quantityBought.
@@ -265,14 +272,14 @@ export default function ProductAnalysisPage() {
                             />
                             <QuickStat
                                 label="Days Left"
-                                value={isExpired ? 'Expired' : daysUntilExpiration !== null ? `${daysUntilExpiration}` : '—'}
+                                value={isExpired ? 'Expired' : daysUntilExpiration !== null ? `${daysUntilExpiration}` : '-'}
                                 hoverValue={isExpired ? undefined : formatDurationFromDays(daysUntilExpiration)}
                                 icon={Clock}
                                 color={urgencyLevel === 'critical' ? 'red' : urgencyLevel === 'warning' ? 'amber' : 'gray'}
                             />
                             <QuickStat
                                 label="Daily Rate"
-                                value={!isFinalState && currentAvgDailyConsumption ? `${formatQuantity(currentAvgDailyConsumption, productUnit, 2)}/day` : '—'}
+                                value={!isFinalState && currentAvgDailyConsumption ? `${formatQuantity(currentAvgDailyConsumption, productUnit, 2)}/day` : '-'}
                                 hoverValue={!isFinalState && currentAvgDailyConsumption ? `${formatQuantity(currentAvgDailyConsumption * 30, productUnit, 2)}/month` : undefined}
                                 icon={Activity}
                                 color="purple"
@@ -283,7 +290,7 @@ export default function ProductAnalysisPage() {
                     {/* 2x2 Grid Layout */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {/* Consumption Progress */}
-                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg dark:shadow-black/40 border border-gray-100 dark:border-slate-700 overflow-hidden">
                             <div className="bg-gradient-to-r from-emerald-500 to-green-500 p-6">
                                 <div className="flex items-center gap-2 text-white">
                                     <BarChart3 className="w-6 h-6" />
@@ -295,13 +302,13 @@ export default function ProductAnalysisPage() {
                                 {/* Progress Bar */}
                                 <div className="mb-6">
                                     <div className="flex justify-between items-baseline mb-3">
-                                        <span className="text-sm font-medium text-gray-600">Overall Progress</span>
-                                        <span className="text-3xl font-bold text-emerald-700">
+                                        <span className="text-sm font-medium text-gray-600 dark:text-slate-300">Overall Progress</span>
+                                        <span className="text-3xl font-bold text-emerald-700 dark:text-emerald-300">
                                             {formatPercent(percentConsumed, 2)}
                                         </span>
                                     </div>
 
-                                    <div className="relative h-6 bg-gray-200 rounded-full overflow-hidden">
+                                    <div className="relative h-6 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
                                         <div
                                             className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-400 via-emerald-500 to-green-500 rounded-full transition-all duration-500 ease-out flex items-center justify-end pr-2"
                                             style={{ width: `${Math.min(percentConsumed ?? 0, 100)}%` }}
@@ -314,7 +321,7 @@ export default function ProductAnalysisPage() {
                                         </div>
                                     </div>
 
-                                    <div className="flex justify-between text-sm text-gray-600 mt-2">
+                                    <div className="flex justify-between text-sm text-gray-600 dark:text-slate-300 mt-2">
                                         <span>Started</span>
                                         <span className="font-medium">{formatQuantity(remainingQuantity, productUnit, 2)} remaining</span>
                                     </div>
@@ -322,14 +329,14 @@ export default function ProductAnalysisPage() {
 
                                 {/* Warnings - Only show if warnings exist */}
                                 {warnings && warnings.length > 0 && (
-                                    <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-200 p-4">
+                                    <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl border border-amber-200 dark:border-amber-800 p-4">
                                         <div className="flex items-center gap-2 mb-2">
                                             <AlertTriangle className="w-4 h-4 text-amber-600" />
-                                            <h3 className="text-sm font-semibold text-amber-900">Warnings</h3>
+                                            <h3 className="text-sm font-semibold text-amber-900 dark:text-amber-200">Warnings</h3>
                                         </div>
                                         <div className="space-y-1">
                                             {warnings.map((w, idx) => (
-                                                <div key={idx} className="text-sm text-amber-900 pl-6">• {w}</div>
+                                                <div key={idx} className="text-sm text-amber-900 pl-6">- {w}</div>
                                             ))}
                                         </div>
                                     </div>
@@ -338,7 +345,7 @@ export default function ProductAnalysisPage() {
                         </div>
 
                         {/* Timeline Analysis */}
-                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg dark:shadow-black/40 border border-gray-100 dark:border-slate-700 overflow-hidden">
                             <div className="bg-gradient-to-r from-blue-500 to-indigo-500 p-6">
                                 <div className="flex items-center gap-2 text-white">
                                     <Calendar className="w-6 h-6" />
@@ -394,24 +401,24 @@ export default function ProductAnalysisPage() {
                                     {!isFinalState &&
                                         hasStartedConsumption &&
                                         typeof recommendedDailyToFinish === 'number' && (
-                                            <div className="mt-2 p-4 rounded-lg bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-200">
+                                            <div className="mt-2 p-4 rounded-lg bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 border-2 border-emerald-200 dark:border-emerald-800">
                                                 <div className="flex items-center gap-2 mb-2">
                                                     <Activity className="w-4 h-4 text-emerald-600" />
-                                                    <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Usage Status</p>
+                                                    <p className="text-xs font-semibold text-gray-600 dark:text-slate-300 uppercase tracking-wide">Usage Status</p>
                                                 </div>
-                                                <p className="text-sm font-semibold text-emerald-800">
+                                                <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
                                                     {currentAvgDailyConsumption! < recommendedDailyToFinish
-                                                        ? '⚠️ Usage below recommended pace'
+                                                        ? 'Usage below recommended pace'
                                                         : currentAvgDailyConsumption! > recommendedDailyToFinish * 1.5
-                                                            ? '⚡ Using faster than needed'
-                                                            : '✓ On track to finish on time'
+                                                            ? 'Using faster than needed'
+                                                            : 'On track to finish on time'
                                                     }
                                                 </p>
                                             </div>
                                         )}
 
                                     {!isFinalState && !hasStartedConsumption && (
-                                        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-sm text-emerald-800">
+                                        <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-3 text-sm text-emerald-800 dark:text-emerald-300">
                                             Start consuming this product to see usage insights.
                                         </div>
                                     )}
@@ -421,6 +428,8 @@ export default function ProductAnalysisPage() {
                     </div>
                 </div>
             </div>
+            </main>
+            <Footer />
         </div>
     );
 }
@@ -446,32 +455,34 @@ function QuickStat({
         red: 'text-red-600',
         amber: 'text-amber-600',
         purple: 'text-purple-600',
-        gray: 'text-gray-600',
+        gray: 'text-gray-600 dark:text-slate-300',
     };
 
     return (
         <div
-            className="bg-white p-6 cursor-pointer relative transition-all hover:bg-gray-50"
+            className="bg-white dark:bg-slate-800 p-6 cursor-pointer relative transition-all hover:bg-gray-50 dark:hover:bg-slate-700"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
-            <div className="flex items-center gap-2 mb-2">
-                <Icon className={`w-5 h-5 ${colorClasses[color as keyof typeof colorClasses]}`} />
-                <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">
-                    {label}
-                </span>
-            </div>
-            <p className="text-2xl font-bold text-gray-900">
+             <div className="flex items-center gap-2 mb-2">
+                 <Icon className={`w-5 h-5 ${colorClasses[color as keyof typeof colorClasses]}`} />
+                 <span className="text-xs font-medium text-gray-600 dark:text-slate-300 uppercase tracking-wide">
+                     {label}
+                 </span>
+             </div>
+            <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">
                 {isHovered && hoverValue ? hoverValue : value}
             </p>
-            {hoverValue && (
-                <div className="absolute top-2 right-2 text-gray-400 text-xs">
-                    ⓘ
-                </div>
-            )}
-        </div>
-    );
-}
+             {hoverValue && (
+                 <div className="absolute top-2 right-2 text-gray-400 dark:text-slate-500 text-xs">
+                     <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-slate-300 dark:border-slate-600 text-[10px] font-semibold bg-white/80 dark:bg-slate-700/80">
+                         i
+                     </span>
+                 </div>
+             )}
+         </div>
+     );
+ }
 
 function DataRow({
                      icon: Icon,
@@ -496,38 +507,41 @@ function DataRow({
         <div
             className={`flex items-start justify-between p-4 rounded-xl border-2 transition-all cursor-pointer ${
                 highlighted
-                    ? 'bg-gradient-to-r from-emerald-50 to-green-50 border-emerald-300'
+                    ? 'bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 border-emerald-300 dark:border-emerald-800'
                     : highlight
-                        ? 'bg-red-50 border-red-200'
+                        ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
                         : warning
-                            ? 'bg-amber-50 border-amber-200'
-                            : 'bg-gray-50 border-gray-200'
+                            ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+                            : 'bg-gray-50 border-gray-200 dark:bg-slate-700 dark:border-slate-600'
             }`}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
             <div className="flex items-center gap-3 flex-1">
                 <Icon className={`w-5 h-5 flex-shrink-0 ${
-                    highlighted ? 'text-emerald-600' :
-                        highlight ? 'text-red-600' :
-                            warning ? 'text-amber-600' :
-                                'text-gray-600'
+                    highlighted ? 'text-emerald-600 dark:text-emerald-300' :
+                        highlight ? 'text-red-600 dark:text-red-300' :
+                            warning ? 'text-amber-600 dark:text-amber-300' :
+                                'text-gray-600 dark:text-slate-300'
                 }`} />
-                <span className="text-sm font-medium text-gray-700">{label}</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-slate-200">{label}</span>
             </div>
             <div className="flex items-center gap-2">
                 <span className={`text-sm font-bold text-right ${
-                    highlighted ? 'text-emerald-700' :
-                        highlight ? 'text-red-700' :
-                            warning ? 'text-amber-700' :
-                                'text-gray-900'
+                    highlighted ? 'text-emerald-700 dark:text-emerald-300' :
+                        highlight ? 'text-red-700 dark:text-red-300' :
+                            warning ? 'text-amber-700 dark:text-amber-300' :
+                                'text-gray-900 dark:text-slate-100'
                 }`}>
                     {isHovered && hoverValue ? hoverValue : value}
                 </span>
                 {hoverValue && (
-                    <span className="text-gray-400 text-xs">ⓘ</span>
+                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-slate-300 dark:border-slate-600 text-[10px] font-semibold text-slate-500 dark:text-slate-300 bg-white/80 dark:bg-slate-700/80">i</span>
                 )}
             </div>
         </div>
     );
 }
+
+
+

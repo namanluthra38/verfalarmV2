@@ -43,7 +43,7 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-emerald-50 to-amber-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-emerald-50 to-amber-100 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
@@ -51,12 +51,12 @@ export default function Register() {
               <Leaf className="w-8 h-8 text-emerald-800" />
             </div>
           </div>
-          <h1 className="text-4xl font-bold text-emerald-800 mb-2">Verfalarm</h1>
-          <p className="text-emerald-700">Join us in fighting food waste!</p>
+          <h1 className="text-4xl font-bold text-emerald-800 dark:text-emerald-300 mb-2">Verfalarm</h1>
+          <p className="text-emerald-700 dark:text-emerald-400">Join us in fighting food waste!</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <h2 className="text-2xl font-semibold text-emerald-800 mb-6 flex items-center gap-2">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl dark:shadow-black/40 border border-emerald-100 dark:border-slate-700 p-8">
+          <h2 className="text-2xl font-semibold text-emerald-800 dark:text-emerald-300 mb-6 flex items-center gap-2">
             <UserPlus className="w-6 h-6" />
             Create Account
           </h2>
@@ -69,7 +69,7 @@ export default function Register() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                 Display Name
               </label>
               <input
@@ -78,13 +78,13 @@ export default function Register() {
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
                 placeholder="Your name"
               />
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                 Email Address
               </label>
               <input
@@ -93,13 +93,13 @@ export default function Register() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
                 placeholder="your@email.com"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                 Password
               </label>
               <input
@@ -109,7 +109,7 @@ export default function Register() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={8}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
                 placeholder="At least 8 characters"
               />
             </div>
@@ -117,14 +117,14 @@ export default function Register() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-amber-200"
+              className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md dark:shadow-black/30"
             >
               {loading ? 'Creating account...' : 'Create Account'}
             </button>
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-slate-300">
               Already have an account?{' '}
               <Link
                 to="/login"
@@ -136,7 +136,7 @@ export default function Register() {
           </div>
         </div>
 
-        <p className="text-center text-sm text-emerald-700 mt-6">
+        <p className="text-center text-sm text-emerald-700 dark:text-emerald-300 mt-6">
           Smart food tracking for a sustainable future
         </p>
       </div>

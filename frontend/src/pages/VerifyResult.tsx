@@ -49,24 +49,24 @@ export default function VerifyResult() {
   }, [isSuccess, token]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-amber-50 p-4">
-      <div className="max-w-xl w-full bg-white rounded-2xl shadow-lg p-8 text-center">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-amber-50 p-4 dark:from-slate-900 dark:to-slate-800">
+      <div className="max-w-xl w-full bg-white dark:bg-slate-800 rounded-2xl shadow-lg dark:shadow-black/40 border border-emerald-100 dark:border-slate-700 p-8 text-center">
         {isSuccess || token ? (
           <>
-            <h2 className="text-2xl font-semibold text-emerald-700 mb-4">Email Verified</h2>
-            <p className="text-gray-700 mb-6">{message || 'Your email has been verified successfully. You will be redirected.'}</p>
+            <h2 className="text-2xl font-semibold text-emerald-700 dark:text-emerald-300 mb-4">Email Verified</h2>
+            <p className="text-gray-700 dark:text-slate-300 mb-6">{message || 'Your email has been verified successfully. You will be redirected.'}</p>
             <div className="flex justify-center gap-4">
               <Link to="/login" className="px-6 py-2 bg-emerald-600 text-white rounded-lg">Sign In</Link>
-              <Link to="/dashboard" className="px-6 py-2 bg-emerald-100 text-emerald-700 rounded-lg">Go to Dashboard</Link>
+              <Link to="/dashboard" className="px-6 py-2 bg-emerald-100 dark:bg-slate-700 dark:text-emerald-200 text-emerald-700 rounded-lg">Go to Dashboard</Link>
             </div>
           </>
         ) : (
           <>
-            <h2 className="text-2xl font-semibold text-red-600 mb-4">Verification Failed</h2>
-            <p className="text-gray-700 mb-6">{message || 'Verification token is invalid or expired.'}</p>
+            <h2 className="text-2xl font-semibold text-red-600 dark:text-red-300 mb-4">Verification Failed</h2>
+            <p className="text-gray-700 dark:text-slate-300 mb-6">{message || 'Verification token is invalid or expired.'}</p>
             <div className="flex justify-center gap-4">
               <Link to="/register" className="px-6 py-2 bg-amber-500 text-white rounded-lg">Register</Link>
-              <Link to="/login" className="px-6 py-2 bg-emerald-100 text-emerald-700 rounded-lg">Sign In</Link>
+              <Link to="/login" className="px-6 py-2 bg-emerald-100 dark:bg-slate-700 dark:text-emerald-200 text-emerald-700 rounded-lg">Sign In</Link>
             </div>
           </>
         )}

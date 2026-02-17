@@ -13,3 +13,19 @@ export enum Unit {
     BOX = "box",
     PACK = "pack",
 }
+
+export const UnitFullNames: Record<string, string> = {
+    [Unit.PIECES]: "Pieces",
+    [Unit.GRAM]: "Gram",
+    [Unit.KILOGRAM]: "Kilogram",
+    [Unit.LITER]: "Liter",
+    [Unit.MILLILITER]: "Milliliter",
+    [Unit.OUNCE]: "Ounce",
+    [Unit.POUND]: "Pound",
+    [Unit.CUP]: "Cup",
+    [Unit.QUART]: "Quart",
+    [Unit.GALLON]: "Gallon",
+    [Unit.BOTTLE]: "Bottle",
+    [Unit.BOX]: "Box",
+    [Unit.PACK]: "Pack",
+};

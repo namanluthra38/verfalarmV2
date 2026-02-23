@@ -96,6 +96,6 @@ GET {{baseUrl}}/api/reminder
 Content-Type: application/json
 Authorization: Bearer {{token}}
 ###
-GET {{baseUrl}}/api/products/ai-recommend?productName=amoxicillin&daysLeft=5
+GET {{baseUrl}}/api/products/ai-recommend?productName=milk&daysLeft=5&quantityLeft=3&unit=l
 Content-Type: application/json
 Authorization: Bearer {{token}}

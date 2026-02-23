@@ -271,7 +271,7 @@ public class ProductController {
 
     @GetMapping("/ai-recommend")
     @PreAuthorize("hasRole('USER')")
-    public String aiRecommend(@RequestParam String productName, @RequestParam long daysLeft) {
-        return aiRecommendationService.getRecommendation(productName, daysLeft);
+    public String aiRecommend(@RequestParam String productName, @RequestParam long daysLeft, @RequestParam double quantityLeft, @RequestParam String unit) {
+        return aiRecommendationService.getRecommendation(productName, daysLeft, quantityLeft, unit);
     }
 }

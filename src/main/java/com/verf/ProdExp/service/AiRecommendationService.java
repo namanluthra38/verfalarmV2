@@ -15,12 +15,18 @@ public class AiRecommendationService {
         this.chatClient = chatClient;
     }
 
-    public String getRecommendation(String productName, long daysLeft) {
+    public String getRecommendation(String productName, long daysLeft, double quantityLeft, String unit) {
         if (productName == null || productName.isBlank()) {
             return "Product name cannot be empty.";
         }
         if (daysLeft <= 0) {
             return "Days left must be greater than 0.";
+        }
+        if (quantityLeft < 0) {
+            return "Quantity left must be non-negative.";
+        }
+        if (unit == null || unit.isBlank()) {
+            return "Unit must be provided.";
         }
         String systemMessage = """
             You are an assistant that helps users consume products before expiration.
@@ -36,13 +42,18 @@ public class AiRecommendationService {
                 .user(u -> {
                     u.text("""
                             Product: {productName}
-                            Days before expiration: {daysLeft}        
+                            Days before expiration: {daysLeft}
+                            Quantity left: {quantityLeft} {unit}
                             Give practical suggestions to prevent wastage.
                             """);
-                    u.params(Map.of("productName", productName.trim(), "daysLeft", daysLeft));
+                    u.params(Map.of(
+                        "productName", productName.trim(),
+                        "daysLeft", daysLeft,
+                        "quantityLeft", quantityLeft,
+                        "unit", unit
+                    ));
                 })
                 .call()
                 .content();
     }
 }
-

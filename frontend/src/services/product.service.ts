@@ -244,8 +244,8 @@ export class ProductService {
   }
 
   // Get AI recommendation for a product
-  static async getAIRecommendation(productName: string, daysLeft: number, token: string): Promise<string> {
-    const params = new URLSearchParams({ productName, daysLeft: String(daysLeft) });
+  static async getAIRecommendation(productName: string, daysLeft: number, quantityLeft: number, unit: string, token: string): Promise<string> {
+    const params = new URLSearchParams({ productName, daysLeft: String(daysLeft), quantityLeft: String(quantityLeft), unit });
     const response = await fetch(`${API_CONFIG.BASE_URL}/api/products/ai-recommend?${params.toString()}`, {
       headers: {
         'Content-Type': 'application/json',

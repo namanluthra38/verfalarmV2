@@ -94,13 +94,15 @@ export default function ProductDetail() {
   };
 
   const handleGetAIRecommendation = async () => {
-    if (!product || !token) return;
+    if (!product || !token || !analysis) return;
     setAiLoading(true);
     setAiError(null);
     setAiRecommendation(null);
     try {
       const daysLeft = analysis.daysUntilExpiration ?? 0;
-      const result = await ProductService.getAIRecommendation(product.name, daysLeft, token);
+      const quantityLeft = analysis.remainingQuantity ?? 0;
+      const unit = product.unit;
+      const result = await ProductService.getAIRecommendation(product.name, daysLeft, quantityLeft, unit, token);
       setAiRecommendation(result);
     } catch (err) {
       setAiError(err instanceof Error ? err.message : 'Failed to get recommendation');
@@ -150,14 +152,13 @@ export default function ProductDetail() {
     );
   }
 
+  // At this point, analysis is guaranteed not null
   const {
     remainingQuantity,
     percentConsumed,
     daysUntilExpiration,
     isExpired,
-    statusSuggestion,
-    recommendedDailyToFinish,
-    estimatedFinishDate,
+    statusSuggestion
   } = analysis;
 
   // Ensure we always show purchaseDate and notification frequency
@@ -211,6 +212,9 @@ export default function ProductDetail() {
   })();
 
   const hasChanged = consumedInput !== (product.quantityConsumed ?? 0);
+
+  // Only allow AI recommendation for active products
+  const isRecommendationAllowed = statusSuggestion !== 'EXPIRED' && statusSuggestion !== 'FINISHED';
 
   return (
       <div className="min-h-screen flex flex-col bg-gradient-to-br from-emerald-50 via-white to-amber-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
@@ -425,32 +429,34 @@ export default function ProductDetail() {
             {/* Right Column - Sidebar */}
             <div className="space-y-6">
               {/* AI Recommendation Button & Result */}
-              <div>
-                <button
-                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white px-6 py-4 rounded-2xl font-bold text-lg shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                  onClick={handleGetAIRecommendation}
-                  disabled={aiLoading}
-                >
-                  <Sparkles className="w-6 h-6" />
-                  {aiLoading ? 'Getting Recommendation...' : 'Get AI recommendation'}
-                </button>
-                {aiError && (
-                  <div className="mt-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-xl p-4 text-red-700 dark:text-red-300 text-sm">
-                    {aiError}
-                  </div>
-                )}
-                {aiRecommendation && !aiError && (
-                  <div className="mt-4 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-slate-900 dark:to-slate-800 rounded-xl shadow-lg border border-purple-200 dark:border-purple-800 p-5">
-                    <div className="flex items-center gap-2 mb-2 text-purple-700 dark:text-purple-300">
-                      <Sparkles className="w-5 h-5" />
-                      <span className="font-semibold">AI Recommendation</span>
+              {isRecommendationAllowed && (
+                <div>
+                  <button
+                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white px-6 py-4 rounded-2xl font-bold text-lg shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                    onClick={handleGetAIRecommendation}
+                    disabled={aiLoading}
+                  >
+                    <Sparkles className="w-6 h-6" />
+                    {aiLoading ? 'Getting Recommendation...' : 'Get AI recommendation'}
+                  </button>
+                  {aiError && (
+                    <div className="mt-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-xl p-4 text-red-700 dark:text-red-300 text-sm">
+                      {aiError}
                     </div>
-                    <div className="text-gray-700 dark:text-slate-200 whitespace-pre-line text-sm">
-                      {aiRecommendation}
+                  )}
+                  {aiRecommendation && !aiError && (
+                    <div className="mt-4 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-slate-900 dark:to-slate-800 rounded-xl shadow-lg border border-purple-200 dark:border-purple-800 p-5">
+                      <div className="flex items-center gap-2 mb-2 text-purple-700 dark:text-purple-300">
+                        <Sparkles className="w-5 h-5" />
+                        <span className="font-semibold">AI Recommendation</span>
+                      </div>
+                      <div className="text-gray-700 dark:text-slate-200 whitespace-pre-line text-sm">
+                        {aiRecommendation}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
 
               {/* Quick Actions */}
               <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 overflow-hidden">

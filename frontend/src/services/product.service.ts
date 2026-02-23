@@ -242,4 +242,20 @@ export class ProductService {
     const text = await response.text();
     try { return text ? JSON.parse(text) : null; } catch(e) { return null; }
   }
+
+  // Get AI recommendation for a product
+  static async getAIRecommendation(productName: string, daysLeft: number, token: string): Promise<string> {
+    const params = new URLSearchParams({ productName, daysLeft: String(daysLeft) });
+    const response = await fetch(`${API_CONFIG.BASE_URL}/api/products/ai-recommend?${params.toString()}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(token),
+      },
+    });
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP error! status: ${response.status}`);
+    }
+    return response.text();
+  }
 }

@@ -6,6 +6,7 @@ import com.verf.ProdExp.dto.QuantityConsumedUpdateRequest;
 import com.verf.ProdExp.entity.NotificationFrequency;
 import com.verf.ProdExp.entity.Status;
 import com.verf.ProdExp.exception.BadRequestException;
+import com.verf.ProdExp.service.AiRecommendationService;
 import com.verf.ProdExp.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -36,6 +37,8 @@ public class ProductController {
     private static final Logger log = LoggerFactory.getLogger(ProductController.class);
 
     private final ProductService productService;
+
+    private final AiRecommendationService aiRecommendationService;
 
     // Allowed sort keys. "percentageLeft" is computed client-side in this controller.
     // Keep in sync with exposed fields on ProductResponse.
@@ -264,5 +267,11 @@ public class ProductController {
         org.springframework.data.domain.PageRequest pageable = org.springframework.data.domain.PageRequest.of(pageNumber, pageSize, sort);
 
         return ResponseEntity.ok(productService.searchByUser(pageable, userId, q == null ? "" : q));
+    }
+
+    @GetMapping("/ai-recommend")
+    @PreAuthorize("hasRole('USER')")
+    public String aiRecommend(@RequestParam String productName, @RequestParam long daysLeft) {
+        return aiRecommendationService.getRecommendation(productName, daysLeft);
     }
 }

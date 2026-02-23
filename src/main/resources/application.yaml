@@ -29,14 +29,23 @@
 spring:
     mongodb:
       # Prefer an environment-provided URI, but fall back to localhost:27018 explicitly so we don't accidentally connect to the default 27017
-      uri: ${MONGO_URL:mongodb://localhost:27018/db?authSource=admin}
-      database: verfalarm
+      uri: mongodb://admin_user:password@localhost:27018/db?authSource=admin
+      #database: verfalarm
       ssl:
         enabled: false
       # ensure Spring Data will create indexes defined on entities (CompoundIndex etc.)
       properties:
         autoIndexCreation: true
 
+    ai:
+      openai:
+        api-key: ${API_KEY}
+        base-url: https://openrouter.ai/api
+
+        chat:
+          options:
+            model: stepfun/step-3.5-flash:free
+            max-tokens: 2048
 
 app:
   backendBaseUrl: ${BACKEND_BASE_URL:http://localhost:8080}

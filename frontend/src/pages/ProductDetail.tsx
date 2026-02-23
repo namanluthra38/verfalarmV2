@@ -34,6 +34,9 @@ export default function ProductDetail() {
   const [consumedInput, setConsumedInput] = useState(0);
   const [updating, setUpdating] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [aiRecommendation, setAiRecommendation] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id || !token) return;
@@ -87,6 +90,22 @@ export default function ProductDetail() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Delete failed');
       setShowDeleteConfirm(false);
+    }
+  };
+
+  const handleGetAIRecommendation = async () => {
+    if (!product || !token) return;
+    setAiLoading(true);
+    setAiError(null);
+    setAiRecommendation(null);
+    try {
+      const daysLeft = analysis.daysUntilExpiration ?? 0;
+      const result = await ProductService.getAIRecommendation(product.name, daysLeft, token);
+      setAiRecommendation(result);
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : 'Failed to get recommendation');
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -405,38 +424,33 @@ export default function ProductDetail() {
 
             {/* Right Column - Sidebar */}
             <div className="space-y-6">
-              {/* Smart Recommendations */}
-              {!isExpired && recommendedDailyToFinish && (
-                  <div className="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-slate-900 dark:to-slate-800 rounded-2xl shadow-lg border border-purple-200 dark:border-purple-800 overflow-hidden">
-                    <div className="bg-gradient-to-r from-purple-500 to-indigo-500 p-6">
-                      <div className="flex items-center gap-2 text-white">
-                        <Sparkles className="w-6 h-6" />
-                        <h3 className="font-bold text-lg">Smart Suggestion</h3>
-                      </div>
+              {/* AI Recommendation Button & Result */}
+              <div>
+                <button
+                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white px-6 py-4 rounded-2xl font-bold text-lg shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                  onClick={handleGetAIRecommendation}
+                  disabled={aiLoading}
+                >
+                  <Sparkles className="w-6 h-6" />
+                  {aiLoading ? 'Getting Recommendation...' : 'Get AI recommendation'}
+                </button>
+                {aiError && (
+                  <div className="mt-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-xl p-4 text-red-700 dark:text-red-300 text-sm">
+                    {aiError}
+                  </div>
+                )}
+                {aiRecommendation && !aiError && (
+                  <div className="mt-4 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-slate-900 dark:to-slate-800 rounded-xl shadow-lg border border-purple-200 dark:border-purple-800 p-5">
+                    <div className="flex items-center gap-2 mb-2 text-purple-700 dark:text-purple-300">
+                      <Sparkles className="w-5 h-5" />
+                      <span className="font-semibold">AI Recommendation</span>
                     </div>
-
-                    <div className="p-6">
-                      <p className="text-sm text-gray-600 dark:text-slate-300 mb-4">
-                        To finish before expiration:
-                      </p>
-                      <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border-2 border-purple-200 dark:border-purple-700 mb-4">
-                        <p className="text-4xl font-bold text-purple-700 dark:text-purple-300 mb-1">
-                          {formatQuantity(recommendedDailyToFinish, product.unit, 2).split(' ')[0]}
-                        </p>
-                        <p className="text-sm text-gray-600 dark:text-slate-300">{formatQuantity(recommendedDailyToFinish, product.unit, 2).split(' ').slice(1).join(' ')} per day</p>
-                      </div>
-
-                      {estimatedFinishDate && (
-                          <div className="flex items-start gap-2 text-sm text-gray-700 dark:text-slate-200 bg-purple-50 dark:bg-slate-800 rounded-lg p-3">
-                            <Calendar className="w-4 h-4 text-purple-600 dark:text-purple-300 mt-0.5 flex-shrink-0" />
-                            <p>
-                              Expected finish date: <strong>{formatDateISO(estimatedFinishDate)}</strong>
-                            </p>
-                          </div>
-                      )}
+                    <div className="text-gray-700 dark:text-slate-200 whitespace-pre-line text-sm">
+                      {aiRecommendation}
                     </div>
                   </div>
-              )}
+                )}
+              </div>
 
               {/* Quick Actions */}
               <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 overflow-hidden">

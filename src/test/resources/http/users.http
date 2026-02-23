@@ -5,7 +5,7 @@
 @userPassword = secret123
 @adminEmail = admin@gmail.com
 @adminPassword = secret123
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OTgyNGI5MmJlNDA1ZDhkNWNjNjRlYmYiLCJpYXQiOjE3NzAxNDY5MjQsImV4cCI6MTc3MDE1MDUyNH0.9n3X35tQTU-Wos1zlK2nfs37oUUDdTH64hhEogSoNr8
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OTZiNmRjZmU1Njg2MzJkYTBkM2Q4OTIiLCJpYXQiOjE3NzE4NjkwNjksImV4cCI6MTc3MTg3MjY2OX0.wmSYe3HWU7XQ0ablC_UN9m7ElL7ttja-OS6j1OkY5Rc
 @userId = 69785d3f9332fb1f8c6c0740
 ### Register a new user
 POST https://verfalarm.up.railway.app/api/auth/register
@@ -93,5 +93,9 @@ Authorization: Bearer {{adminToken}}
 
 ### reminder
 GET {{baseUrl}}/api/reminder
+Content-Type: application/json
+Authorization: Bearer {{token}}
+###
+GET {{baseUrl}}/api/products/ai-recommend?productName=amoxicillin&daysLeft=5
 Content-Type: application/json
 Authorization: Bearer {{token}}

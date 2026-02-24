@@ -431,19 +431,26 @@ export default function ProductDetail() {
               {/* AI Recommendation Button & Result */}
               {isRecommendationAllowed && (
                 <div>
-                  <button
-                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white px-6 py-4 rounded-2xl font-bold text-lg shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                    onClick={handleGetAIRecommendation}
-                    disabled={aiLoading}
-                  >
-                    <Sparkles className="w-6 h-6" />
-                    {aiLoading ? 'Getting Recommendation...' : 'Get AI recommendation'}
-                  </button>
-                  {aiError && (
+                  {/* Only show the button if we don't already have a recommendation */}
+                  {!aiRecommendation && (
+                    <button
+                      className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white px-6 py-4 rounded-2xl font-bold text-lg shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                      onClick={handleGetAIRecommendation}
+                      disabled={aiLoading}
+                    >
+                      <Sparkles className="w-6 h-6" />
+                      {aiLoading ? 'Getting Recommendation...' : 'Get AI recommendation'}
+                    </button>
+                  )}
+
+                  {/* Show error only when there's no recommendation yet (allows retry) */}
+                  {aiError && !aiRecommendation && (
                     <div className="mt-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-xl p-4 text-red-700 dark:text-red-300 text-sm">
                       {aiError}
                     </div>
                   )}
+
+                  {/* Show recommendation when available */}
                   {aiRecommendation && !aiError && (
                     <div className="mt-4 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-slate-900 dark:to-slate-800 rounded-xl shadow-lg border border-purple-200 dark:border-purple-800 p-5">
                       <div className="flex items-center gap-2 mb-2 text-purple-700 dark:text-purple-300">
@@ -451,7 +458,7 @@ export default function ProductDetail() {
                         <span className="font-semibold">AI Recommendation</span>
                       </div>
                       <div className="text-gray-700 dark:text-slate-200 whitespace-pre-line text-sm">
-                        {aiRecommendation}
+                        {renderMarkdownBold(aiRecommendation)}
                       </div>
                     </div>
                   )}
@@ -615,4 +622,16 @@ function StatCard({
         )}
       </div>
   );
+}
+
+// Utility to render **bold** markdown as <strong>
+function renderMarkdownBold(text: string) {
+  // Replace **text** with <strong>text</strong>
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
 }

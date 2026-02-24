@@ -1,5 +1,6 @@
 package com.verf.ProdExp.service;
 
+import com.verf.ProdExp.dto.RecommendationRequest;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,17 +16,19 @@ public class AiRecommendationService {
         this.chatClient = chatClient;
     }
 
-    public String getRecommendation(String productName, long daysLeft, double quantityLeft, String unit) {
-        if (productName == null || productName.isBlank()) {
+
+    // Refactored method to use DTO
+    public String getRecommendation(RecommendationRequest req) {
+        if (req.productName() == null || req.productName().isBlank()) {
             return "Product name cannot be empty.";
         }
-        if (daysLeft <= 0) {
+        if (req.daysLeft() <= 0) {
             return "Days left must be greater than 0.";
         }
-        if (quantityLeft < 0) {
+        if (req.quantityLeft() < 0) {
             return "Quantity left must be non-negative.";
         }
-        if (unit == null || unit.isBlank()) {
+        if (req.unit() == null || req.unit().isBlank()) {
             return "Unit must be provided.";
         }
         String systemMessage = """
@@ -47,10 +50,10 @@ public class AiRecommendationService {
                             Give practical suggestions to prevent wastage.
                             """);
                     u.params(Map.of(
-                        "productName", productName.trim(),
-                        "daysLeft", daysLeft,
-                        "quantityLeft", quantityLeft,
-                        "unit", unit
+                        "productName", req.productName().trim(),
+                        "daysLeft", req.daysLeft(),
+                        "quantityLeft", req.quantityLeft(),
+                        "unit", req.unit()
                     ));
                 })
                 .call()

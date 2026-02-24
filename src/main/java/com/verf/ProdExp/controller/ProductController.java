@@ -3,6 +3,7 @@ package com.verf.ProdExp.controller;
 import com.verf.ProdExp.dto.ProductRequest;
 import com.verf.ProdExp.dto.ProductResponse;
 import com.verf.ProdExp.dto.QuantityConsumedUpdateRequest;
+import com.verf.ProdExp.dto.RecommendationRequest;
 import com.verf.ProdExp.entity.NotificationFrequency;
 import com.verf.ProdExp.entity.Status;
 import com.verf.ProdExp.exception.BadRequestException;
@@ -272,6 +273,7 @@ public class ProductController {
     @GetMapping("/ai-recommend")
     @PreAuthorize("hasRole('USER')")
     public String aiRecommend(@RequestParam String productName, @RequestParam long daysLeft, @RequestParam double quantityLeft, @RequestParam String unit) {
-        return aiRecommendationService.getRecommendation(productName, daysLeft, quantityLeft, unit);
+        RecommendationRequest req = new RecommendationRequest(productName, daysLeft, quantityLeft, unit);
+        return aiRecommendationService.getRecommendation(req);
     }
 }

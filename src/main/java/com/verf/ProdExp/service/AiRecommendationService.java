@@ -3,6 +3,7 @@ package com.verf.ProdExp.service;
 import com.verf.ProdExp.dto.RecommendationRequest;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -18,7 +19,17 @@ public class AiRecommendationService {
 
 
     // Refactored method to use DTO
+    @Cacheable(
+            value = "aiRecommendations",
+            // Use root.args[0] so SpEL reads properties from the RecommendationRequest parameter
+            key = "T(String).format('ai:recommend:%s:%d:%.2f:%s', " +
+                    "#root.args[0].productName, " +
+                    "#root.args[0].daysLeft, " +
+                    "#root.args[0].quantityLeft, " +
+                    "#root.args[0].unit)"
+    )
     public String getRecommendation(RecommendationRequest req) {
+        System.out.println("🔥 AI CALLED");
         if (req.productName() == null || req.productName().isBlank()) {
             return "Product name cannot be empty.";
         }

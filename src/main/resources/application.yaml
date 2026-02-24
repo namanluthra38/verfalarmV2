@@ -36,6 +36,11 @@ spring:
       # ensure Spring Data will create indexes defined on entities (CompoundIndex etc.)
       properties:
         autoIndexCreation: true
+    data:
+      redis:
+        database: 0
+        host: localhost
+        port: 6379
 
     ai:
       openai:

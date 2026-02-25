@@ -329,14 +329,14 @@ export default function ProductAnalysisPage() {
 
                                 {/* Warnings - Only show if warnings exist */}
                                 {warnings && warnings.length > 0 && (
-                                    <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl border border-amber-200 dark:border-amber-800 p-4">
+                                    <div className="rounded-xl border p-4 bg-amber-50 border-amber-200 dark:bg-amber-900/30 dark:border-amber-700">
                                         <div className="flex items-center gap-2 mb-2">
-                                            <AlertTriangle className="w-4 h-4 text-amber-600" />
-                                            <h3 className="text-sm font-semibold text-amber-900 dark:text-amber-200">Warnings</h3>
+                                            <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                                            <h3 className="text-sm font-semibold text-amber-900 dark:text-amber-100">Warnings</h3>
                                         </div>
                                         <div className="space-y-1">
                                             {warnings.map((w, idx) => (
-                                                <div key={idx} className="text-sm text-amber-900 pl-6">- {w}</div>
+                                                <div key={idx} className="ttext-sm pl-6 text-amber-800 dark:text-amber-200">- {w}</div>
                                             ))}
                                         </div>
                                     </div>
@@ -542,6 +542,7 @@ function DataRow({
         </div>
     );
 }
+
 
 
 

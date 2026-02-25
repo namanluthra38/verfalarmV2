@@ -253,8 +253,31 @@ export class ProductService {
        },
      });
      if (!response.ok) {
-       const error = await response.text();
-       throw new Error(error || `HTTP error! status: ${response.status}`);
+       // Try to produce a user-friendly message.
+       // For 429 (Too Many Requests) we provide a clear message so the frontend can show it directly.
+       try {
+         const text = await response.text();
+         // attempt to parse JSON error body that may contain detail/message
+         let parsed: any = null;
+         try { parsed = text ? JSON.parse(text) : null; } catch(e) { parsed = null; }
+
+         if (response.status === 429) {
+           // Prefer backend-provided message if available
+           const msg = (parsed && (parsed.detail || parsed.message || parsed.title))
+             ? (parsed.detail || parsed.message || parsed.title)
+             : 'You have exceeded your daily AI recommendation limit. Please try again tomorrow.';
+           throw new Error(msg);
+         }
+
+         // For other errors, extract a reasonable message
+         const otherMsg = (parsed && (parsed.detail || parsed.message || parsed.title))
+           ? (parsed.detail || parsed.message || parsed.title)
+           : text || `HTTP error! status: ${response.status}`;
+         throw new Error(otherMsg);
+       } catch (e) {
+         // In case something odd happens while building the message
+         throw new Error('Failed to get AI recommendation. Please try again.');
+       }
      }
     return response.text();
    }

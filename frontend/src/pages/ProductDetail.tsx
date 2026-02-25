@@ -1,5 +1,5 @@
 // TypeScript
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { ProductService } from '../services/product.service';
@@ -20,7 +20,7 @@ import {
   Target,
   Sparkles,
 } from 'lucide-react';
-import { formatDateISO,  formatPercent, formatQuantity } from '../utils/format';
+import { formatDateISO, formatPercent, formatQuantity } from '../utils/format';
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
@@ -38,6 +38,21 @@ export default function ProductDetail() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiRemaining, setAiRemaining] = useState<number | null>(null);
+  const [, setAiDailyLimit] = useState<number | null>(null);
+
+  const nfLabel = useMemo(() => {
+    const nf = product?.notificationFrequency ?? 'MONTHLY';
+    switch (String(nf)) {
+      case 'DAILY':
+        return 'Daily';
+      case 'WEEKLY':
+        return 'Weekly';
+      case 'MONTHLY':
+        return 'Monthly';
+      default:
+        return String(nf);
+    }
+  }, [product?.notificationFrequency]);
 
   useEffect(() => {
     if (!id || !token) return;
@@ -59,8 +74,18 @@ export default function ProductDetail() {
 
     // fetch AI remaining quota for user
     ProductService.getAIRemain(token)
-      .then(r => setAiRemaining(r.remaining))
-      .catch(() => setAiRemaining(null));
+      .then(r => {
+        setAiRemaining(r.remaining);
+        setAiDailyLimit(r.dailyLimit);
+      })
+      .catch(() => {
+        setAiRemaining(null);
+        setAiDailyLimit(null);
+      });
+    
+    // Reset transient AI states when product changes
+    setAiRecommendation(null);
+    setAiError(null);
   }, [id, token]);
 
   const handleUpdateConsumed = async () => {
@@ -114,8 +139,17 @@ export default function ProductDetail() {
       // refresh remaining from header or endpoint
       const remaining = await ProductService.getAIRemain(token);
       setAiRemaining(remaining.remaining);
+      setAiDailyLimit(remaining.dailyLimit);
     } catch (err) {
-      setAiError(err instanceof Error ? err.message : 'Failed to get recommendation');
+      // Provide a friendly message for rate-limit (429) or other errors
+      let msg = 'Failed to get recommendation. Please try again.';
+      if (err instanceof Error) {
+        msg = err.message;
+      } else if (typeof err === 'string') {
+        msg = err;
+      }
+      // If server returned a structured 429 message like JSON, ProductService already extracted it
+      setAiError(msg);
     } finally {
       setAiLoading(false);
     }
@@ -171,9 +205,7 @@ export default function ProductDetail() {
     statusSuggestion
   } = analysis;
 
-  // Ensure we always show purchaseDate and notification frequency
-  const notificationFrequency = product.notificationFrequency ?? 'MONTHLY';
-
+  // Ensure we always show purchaseDate and notification frequency via memoized label
   const statusUI = (() => {
     switch (statusSuggestion) {
       case 'EXPIRED':
@@ -295,15 +327,7 @@ export default function ProductDetail() {
                           {/* Notification frequency tag (display like status) */}
                             <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-200 dark:border-indigo-800">
                             <Clock className="w-4 h-4" />
-                            {(() => {
-                              const nf = notificationFrequency;
-                              switch (String(nf)) {
-                                case 'DAILY': return 'Daily';
-                                case 'WEEKLY': return 'Weekly';
-                                case 'MONTHLY': return 'Monthly';
-                                default: return String(nf);
-                              }
-                            })()}
+                            {nfLabel}
                           </span>
 
                           {daysUntilExpiration !== null && !isExpired && (
@@ -445,22 +469,24 @@ export default function ProductDetail() {
                   {!aiRecommendation && (
                     <div className="flex flex-col">
                       <button
-                        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white px-6 py-4 rounded-2xl font-bold text-lg shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                        className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-bold text-lg transition-all shadow-lg ${aiLoading ? 'opacity-80 cursor-wait bg-gradient-to-r from-purple-400 to-indigo-400' : 'bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600'}`}
                         onClick={handleGetAIRecommendation}
+                        // allow clicks even when aiRemaining is 0 so cached results can be retrieved
                         disabled={aiLoading}
                       >
                         <Sparkles className="w-6 h-6" />
-                        {aiLoading ? 'Getting Recommendation...' : 'Get AI recommendation'}
+                        {/* Compose label to include remaining calls left inside the button: '(2 left)' */}
+                        {aiLoading ? 'Getting Recommendation...' : (
+                          aiRemaining === null ? 'Get AI recommendation' : `Get AI recommendation (${aiRemaining} left)`
+                        )}
                       </button>
-                      {aiRemaining !== null && (
-                        <div className="mt-2 text-sm text-gray-600 dark:text-slate-400">Remaining AI calls today: <strong className="text-emerald-700 dark:text-emerald-300">{aiRemaining}</strong></div>
-                      )}
                     </div>
                   )}
 
                   {/* Show error only when there's no recommendation yet (allows retry) */}
                   {aiError && !aiRecommendation && (
                     <div className="mt-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-xl p-4 text-red-700 dark:text-red-300 text-sm">
+                      {/* Display the friendly error message returned from ProductService */}
                       {aiError}
                     </div>
                   )}
@@ -599,7 +625,7 @@ function StatCard({
                     hoverValue,
                     color = 'gray',
                   }: {
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: string;
   hoverValue?: string;

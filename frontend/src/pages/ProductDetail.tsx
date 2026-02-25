@@ -37,6 +37,7 @@ export default function ProductDetail() {
   const [aiRecommendation, setAiRecommendation] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [aiRemaining, setAiRemaining] = useState<number | null>(null);
 
   useEffect(() => {
     if (!id || !token) return;
@@ -55,6 +56,11 @@ export default function ProductDetail() {
             setError(err instanceof Error ? err.message : 'Failed to load product')
         )
         .finally(() => setLoading(false));
+
+    // fetch AI remaining quota for user
+    ProductService.getAIRemain(token)
+      .then(r => setAiRemaining(r.remaining))
+      .catch(() => setAiRemaining(null));
   }, [id, token]);
 
   const handleUpdateConsumed = async () => {
@@ -102,8 +108,12 @@ export default function ProductDetail() {
       const daysLeft = analysis.daysUntilExpiration ?? 0;
       const quantityLeft = analysis.remainingQuantity ?? 0;
       const unit = product.unit;
-      const result = await ProductService.getAIRecommendation(product.name, daysLeft, quantityLeft, unit, token);
+      const result = await ProductService.getAIRecommendation(product.id, product.name, daysLeft, quantityLeft, unit, token);
       setAiRecommendation(result);
+
+      // refresh remaining from header or endpoint
+      const remaining = await ProductService.getAIRemain(token);
+      setAiRemaining(remaining.remaining);
     } catch (err) {
       setAiError(err instanceof Error ? err.message : 'Failed to get recommendation');
     } finally {
@@ -433,14 +443,19 @@ export default function ProductDetail() {
                 <div>
                   {/* Only show the button if we don't already have a recommendation */}
                   {!aiRecommendation && (
-                    <button
-                      className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white px-6 py-4 rounded-2xl font-bold text-lg shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                      onClick={handleGetAIRecommendation}
-                      disabled={aiLoading}
-                    >
-                      <Sparkles className="w-6 h-6" />
-                      {aiLoading ? 'Getting Recommendation...' : 'Get AI recommendation'}
-                    </button>
+                    <div className="flex flex-col">
+                      <button
+                        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white px-6 py-4 rounded-2xl font-bold text-lg shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                        onClick={handleGetAIRecommendation}
+                        disabled={aiLoading}
+                      >
+                        <Sparkles className="w-6 h-6" />
+                        {aiLoading ? 'Getting Recommendation...' : 'Get AI recommendation'}
+                      </button>
+                      {aiRemaining !== null && (
+                        <div className="mt-2 text-sm text-gray-600 dark:text-slate-400">Remaining AI calls today: <strong className="text-emerald-700 dark:text-emerald-300">{aiRemaining}</strong></div>
+                      )}
+                    </div>
                   )}
 
                   {/* Show error only when there's no recommendation yet (allows retry) */}

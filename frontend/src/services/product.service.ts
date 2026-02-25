@@ -244,18 +244,32 @@ export class ProductService {
   }
 
   // Get AI recommendation for a product
-  static async getAIRecommendation(productName: string, daysLeft: number, quantityLeft: number, unit: string, token: string): Promise<string> {
-    const params = new URLSearchParams({ productName, daysLeft: String(daysLeft), quantityLeft: String(quantityLeft), unit });
-    const response = await fetch(`${API_CONFIG.BASE_URL}/api/products/ai-recommend?${params.toString()}`, {
+  static async getAIRecommendation(productId: string, productName: string, daysLeft: number, quantityLeft: number, unit: string, token: string): Promise<string> {
+    const params = new URLSearchParams({ productId, productName, daysLeft: String(daysLeft), quantityLeft: String(quantityLeft), unit });
+    const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PRODUCTS.BASE}/ai-recommend?${params.toString()}`, {
+       headers: {
+         'Content-Type': 'application/json',
+         ...getAuthHeader(token),
+       },
+     });
+     if (!response.ok) {
+       const error = await response.text();
+       throw new Error(error || `HTTP error! status: ${response.status}`);
+     }
+    return response.text();
+   }
+
+  // Fetch remaining AI calls for authenticated user
+  static async getAIRemain(token: string | null): Promise<{ remaining: number; dailyLimit: number }>{
+    const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PRODUCTS.BASE}/ai-remaining`, {
       headers: {
         'Content-Type': 'application/json',
         ...getAuthHeader(token),
-      },
+      }
     });
     if (!response.ok) {
-      const error = await response.text();
-      throw new Error(error || `HTTP error! status: ${response.status}`);
+      throw new Error(await response.text() || `HTTP error! status: ${response.status}`);
     }
-    return response.text();
+    return response.json();
   }
-}
+ }

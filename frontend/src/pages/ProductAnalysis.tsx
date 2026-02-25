@@ -196,7 +196,7 @@ export default function ProductAnalysisPage() {
         if (days === null) return undefined;
         if (days < 30) {
             const weeks = Math.max(1, Math.round(days / 7));
-            return `${weeks} ${weeks === 1 ? 'week' : 'weeks'}`;
+            return `~${weeks} ${weeks === 1 ? 'week' : 'weeks'}`;
         }
         const months = Math.round(days / 30);
         return `~${months} ${months === 1 ? 'month' : 'months'}`;

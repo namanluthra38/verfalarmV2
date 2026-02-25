@@ -9,6 +9,7 @@ import com.verf.ProdExp.entity.Status;
 import com.verf.ProdExp.exception.BadRequestException;
 import com.verf.ProdExp.service.AiRecommendationService;
 import com.verf.ProdExp.service.ProductService;
+import com.verf.ProdExp.service.AIRateLimiterService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
@@ -24,6 +26,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import jakarta.validation.Valid;
 import java.net.URI;
@@ -38,8 +41,8 @@ public class ProductController {
     private static final Logger log = LoggerFactory.getLogger(ProductController.class);
 
     private final ProductService productService;
-
     private final AiRecommendationService aiRecommendationService;
+    private final AIRateLimiterService aiRateLimiterService;
 
     // Allowed sort keys. "percentageLeft" is computed client-side in this controller.
     // Keep in sync with exposed fields on ProductResponse.
@@ -65,7 +68,6 @@ public class ProductController {
         if (principal instanceof UserDetails) {
             return ((UserDetails) principal).getUsername();
         }
-        // Fallback: last resort string representation (providers may supply custom principals)
         if (principal != null) {
             return principal.toString();
         }
@@ -152,8 +154,8 @@ public class ProductController {
             // Sort by (bought - consumed)/bought * 100
             List<ProductResponse> allSorted = new ArrayList<>(allProducts.getContent());
             allSorted.sort(Comparator.comparingDouble(p -> {
-                Double bought = p.quantityBought() == null ? 0.0 : p.quantityBought().doubleValue();
-                Double consumed = p.quantityConsumed() == null ? 0.0 : p.quantityConsumed().doubleValue();
+                double bought = p.quantityBought() == null ? 0.0 : p.quantityBought();
+                double consumed = p.quantityConsumed() == null ? 0.0 : p.quantityConsumed();
                 if (bought == 0.0) return 0.0;
                 return ((bought - consumed) / bought) * 100.0;
             }));
@@ -251,7 +253,7 @@ public class ProductController {
 
     @GetMapping("/user/{userId}/search")
     @PreAuthorize("hasRole('ADMIN') or @securityService.isUserMatching(#userId)")
-    public ResponseEntity<org.springframework.data.domain.Page<ProductResponse>> searchByUser(@PathVariable String userId,
+    public ResponseEntity<Page<ProductResponse>> searchByUser(@PathVariable String userId,
                                                                                              @RequestParam(required = false, defaultValue = "") String q,
                                                                                              @RequestParam(required = false, defaultValue = "0") int pageNumber,
                                                                                              @RequestParam(required = false, defaultValue = "10") int pageSize,
@@ -271,9 +273,43 @@ public class ProductController {
     }
 
     @GetMapping("/ai-recommend")
-    @PreAuthorize("hasRole('USER')")
-    public String aiRecommend(@RequestParam String productName, @RequestParam long daysLeft, @RequestParam double quantityLeft, @RequestParam String unit) {
+    @PreAuthorize("hasRole('USER') and @securityService.isProductOwner(#productId)")
+    public ResponseEntity<String> aiRecommend(@RequestParam String productId,
+                                              @RequestParam String productName,
+                                              @RequestParam long daysLeft,
+                                              @RequestParam double quantityLeft,
+                                              @RequestParam String unit) {
+        // Validate product exists and is owned by user (PreAuthorize already checks ownership, but double-check)
+        var product = productService.getById(productId);
+        if (product == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found");
+        }
+
+        // Disallow AI recommendations for expired or finished products
+        if (product.status() == Status.EXPIRED || product.status() == Status.FINISHED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "AI recommendations are not available for expired or finished products.");
+        }
+
+        String userId = getAuthenticatedUserId();
+
         RecommendationRequest req = new RecommendationRequest(productName, daysLeft, quantityLeft, unit);
-        return aiRecommendationService.getRecommendation(req);
+        String resp = aiRecommendationService.getRecommendation(req, userId);
+
+        long remaining = aiRateLimiterService.getRemaining(userId);
+        return ResponseEntity.ok()
+                .header("X-AI-Remaining", String.valueOf(remaining))
+                .body(resp);
+    }
+
+    // New endpoint: return remaining AI requests for the authenticated user today
+    @GetMapping("/ai-remaining")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Map<String, Object>> aiRemaining() {
+        String userId = getAuthenticatedUserId();
+        long remaining = aiRateLimiterService.getRemaining(userId);
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("remaining", remaining);
+        resp.put("dailyLimit", 5);
+        return ResponseEntity.ok(resp);
     }
 }

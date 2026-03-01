@@ -29,7 +29,7 @@
 spring:
     mongodb:
       # Prefer an environment-provided URI, but fall back to localhost:27018 explicitly so we don't accidentally connect to the default 27017
-      uri: ${MONGO_URL}
+      uri: ${MONGODB_URI}
       #database: verfalarm
       ssl:
         enabled: false

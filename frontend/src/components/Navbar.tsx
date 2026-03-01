@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Leaf, LogOut, User } from 'lucide-react';
+import { LogOut, User } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 
 export default function Navbar() {
@@ -17,8 +17,8 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <Link to="/dashboard" className="flex items-center gap-2 text-white hover:text-amber-200 transition">
-            <div className="bg-amber-400 p-2 rounded-lg">
-              <Leaf className="w-6 h-6 text-emerald-800" />
+            <div className=" p-2 rounded-lg">
+              <img src="/icons/verfalarm-icon.png" alt="Verfalarm Icon" className="w-8 h-8" />
             </div>
             <span className="text-xl font-bold">Verfalarm</span>
           </Link>

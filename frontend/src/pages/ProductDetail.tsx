@@ -469,9 +469,8 @@ export default function ProductDetail() {
                   {!aiRecommendation && (
                     <div className="flex flex-col">
                       <button
-                        className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-bold text-lg transition-all shadow-lg ${aiLoading ? 'opacity-80 cursor-wait bg-gradient-to-r from-purple-400 to-indigo-400' : 'bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600'}`}
+                        className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-bold text-lg transition-all shadow-lg text-white ${aiLoading ? 'opacity-80 cursor-wait bg-gradient-to-r from-purple-400 to-indigo-400' : 'bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600'}`}
                         onClick={handleGetAIRecommendation}
-                        // allow clicks even when aiRemaining is 0 so cached results can be retrieved
                         disabled={aiLoading}
                       >
                         <Sparkles className="w-6 h-6" />

@@ -177,37 +177,51 @@ export default function Dashboard() {
             <h1 className="text-3xl font-bold text-emerald-800 dark:text-emerald-300">Your Products</h1>
             <p className="text-emerald-700 dark:text-emerald-400 mt-1">{totalElements} {totalElements === 1 ? 'item' : 'items'} tracked</p>
           </div>
+          <button onClick={() => navigate('/products/new')} className="flex items-center gap-2 bg-emerald-600 dark:bg-emerald-500 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 dark:hover:bg-emerald-600 font-semibold shadow-md">
+            <Plus className="w-5 h-5" /> Add Product
+          </button>
+        </div>
 
-          <div className="flex gap-3 items-center">
-            <div className="relative">
-              <SortControl sortBy={sortBy} sortDir={sortDirection} onChange={applySortPreference} labels={SORT_LABELS} />
-            </div>
+        {/* Responsive Controls Row */}
+        <div className="flex flex-wrap gap-2 mb-6 items-center">
+          {/* Search — grows to fill available space */}
+          <div className="flex items-center bg-white dark:bg-slate-800 px-3 py-2 rounded-lg border-2 border-emerald-200 dark:border-slate-700 shadow-sm flex-1 min-w-[180px]">
+            <input
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search by name or tags"
+              className="outline-none w-full text-sm bg-transparent text-gray-700 dark:text-slate-200 placeholder:text-gray-500 dark:placeholder:text-slate-400"
+            />
+            {searchQuery ? (
+              <button onClick={() => { setSearchQuery(''); setDebouncedQuery(''); fetchProducts(0).catch(() => {}); }} className="ml-2 text-gray-500 dark:text-slate-400 text-sm">Clear</button>
+            ) : (
+              <Search className="w-5 h-5 text-emerald-600 ml-2 shrink-0" />
+            )}
+          </div>
+          {/* Sort */}
+          <div className="relative shrink-0">
+            <SortControl sortBy={sortBy} sortDir={sortDirection} onChange={applySortPreference} labels={SORT_LABELS} />
+          </div>
+          {/* Filter */}
+          <div className="relative shrink-0">
+            <FilterControl
+              statuses={filterStatuses}
+              notificationFreqs={filterNotificationFreqs}
+              onChange={(s, f) => { setFilterStatuses(s); setFilterNotificationFreqs(f); persistFilters(s, f); fetchProducts(0, sortBy, sortDirection, s, f).catch(() => {}); }}
+            />
+          </div>
+          {/* Refresh */}
+          <button
+            disabled={loading}
+            onClick={() => fetchProducts(pageNumber)}
+            className="flex items-center gap-2 bg-white dark:bg-slate-800 px-4 py-2 rounded-lg shadow-md dark:shadow-black/40 border-2 border-emerald-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+          >
+            <RefreshCw className="w-5 h-5" />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
+        </div>
 
-            <div className="relative">
-              <FilterControl statuses={filterStatuses} notificationFreqs={filterNotificationFreqs} onChange={(s,f) => { setFilterStatuses(s); setFilterNotificationFreqs(f); persistFilters(s,f); fetchProducts(0, sortBy, sortDirection, s, f).catch(()=>{}); }} />
-            </div>
-
-            <div className="relative">
-              <div className="flex items-center    bg-white dark:bg-slate-800   px-3 py-2 rounded-lg    border-2 border-emerald-200 dark:border-slate-700   shadow-sm dark:shadow-black/40">
-                <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search by name or tags" className="outline-none w-64 text-sm bg-transparent    text-gray-700 dark:text-slate-200    placeholder:text-gray-500 dark:placeholder:text-slate-400" />
-                {searchQuery ? (
-                  <button onClick={() => { setSearchQuery(''); setDebouncedQuery(''); fetchProducts(0).catch(()=>{}); }} className="ml-2 text-gray-500 dark:text-slate-400">Clear</button>
-                ) : (
-                  <Search className="w-5 h-5 text-emerald-600 ml-2" />
-                )}
-              </div>
-            </div>
-
-            <button disabled={loading} onClick={() => fetchProducts(pageNumber)} className="flex items-center gap-2    bg-white dark:bg-slate-800   px-4 py-2 rounded-lg    shadow-md dark:shadow-black/40   border-2 border-emerald-200 dark:border-slate-700   hover:bg-gray-50 dark:hover:bg-slate-700   disabled:opacity-50 disabled:cursor-not-allowed">
-               <RefreshCw className="w-5 h-5" /> Refresh
-             </button>
-
-            <button onClick={() => navigate('/products/new')} className="flex items-center gap-2    bg-emerald-600 dark:bg-emerald-500   text-white px-6 py-2 rounded-lg    hover:bg-emerald-700 dark:hover:bg-emerald-600   font-semibold shadow-md">
-               <Plus className="w-5 h-5" /> Add Product
-             </button>
-           </div>
-         </div>
-
+         {/* Product grid and conditional rendering */}
          {error && (<div className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">{error}</div>)}
 
          {loading ? (
@@ -233,8 +247,11 @@ export default function Dashboard() {
            )
          ) : (
            <>
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-               {products.map(product => <ProductCard key={product.id} product={product} />)}
+             {/* Product grid only, controls removed from here */}
+             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+               {products.map(product => (
+                 <ProductCard key={product.id} product={product} />
+               ))}
              </div>
 
              {totalPages > 1 && (

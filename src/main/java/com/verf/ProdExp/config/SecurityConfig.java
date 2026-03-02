@@ -2,6 +2,7 @@
 package com.verf.ProdExp.config;
 
 import com.verf.ProdExp.security.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -24,6 +25,8 @@ import java.util.List;
 @EnableMethodSecurity
 @Configuration
 public class SecurityConfig {
+    @Value("${app.frontendBaseUrl}")
+    private String frontendUrl;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {

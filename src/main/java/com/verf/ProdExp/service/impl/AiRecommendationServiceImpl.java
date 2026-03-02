@@ -75,8 +75,6 @@ public class AiRecommendationServiceImpl implements AiRecommendationService {
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "AI recommendation rate limit exceeded (5/day)");
         }
 
-        System.out.println("🔥 AI CALLED (cache miss)");
-
         String systemMessage = """
             You are an assistant that helps users consume products before expiration.
             Rules:

@@ -14,12 +14,12 @@ export default defineConfig({
         theme_color: '#16a34a',
         icons: [
           {
-            src: 'icons/verfalarm-logo.png',
+            src: 'icons/verfalarm-icon.png',
             sizes: '192x192',
             type: 'image/png',
           },
           {
-            src: 'icons/verfalarm-logo',
+            src: 'icons/verfalarm-icon.png',
             sizes: '512x512',
             type: 'image/png',
           },

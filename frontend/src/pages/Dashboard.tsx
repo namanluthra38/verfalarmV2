@@ -22,7 +22,6 @@ export default function Dashboard() {
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
 
-  // Sort state
   const DEFAULT_SORT_BY = 'expirationDate';
   const DEFAULT_SORT_DIR = 'asc' as const;
   const [sortBy, setSortBy] = useState<string>(() => {
@@ -35,7 +34,6 @@ export default function Dashboard() {
     } catch (e) { return DEFAULT_SORT_DIR; }
   });
 
-  // Filters
   const FILTER_KEY = 'prod_filters_v1';
   const [filterStatuses, setFilterStatuses] = useState<string[]>(() => {
     try { const raw = localStorage.getItem(FILTER_KEY); if (!raw) return []; const parsed = JSON.parse(raw); return parsed.statuses || []; } catch(e) { return []; }
@@ -44,7 +42,6 @@ export default function Dashboard() {
     try { const raw = localStorage.getItem(FILTER_KEY); if (!raw) return []; const parsed = JSON.parse(raw); return parsed.notificationFrequencies || []; } catch(e) { return []; }
   });
 
-  // Search state and debounce
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   useEffect(() => {
@@ -52,15 +49,11 @@ export default function Dashboard() {
     return () => clearTimeout(id);
   }, [searchQuery]);
 
-  // When the debounced query changes, fetch results (reset to first page).
-  // We intentionally avoid listing fetchProducts in deps to prevent re-creating the effect loop.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (authLoading) return;
     if (!user || !token) return;
     if (location.pathname !== '/dashboard') return;
-
-    // always fetch first page for a new query
     fetchProducts(0);
   }, [debouncedQuery, authLoading, user, token, location.pathname]);
 
@@ -168,106 +161,144 @@ export default function Dashboard() {
   const handleNextPage = () => { if (pageNumber < totalPages - 1) fetchProducts(pageNumber + 1); };
 
   return (
-    <div className="min-h-screen flex flex-col    bg-gradient-to-br    from-emerald-50 via-amber-50 to-emerald-100   dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
-      <Navbar />
-      <main className="flex-1">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-emerald-800 dark:text-emerald-300">Your Products</h1>
-            <p className="text-emerald-700 dark:text-emerald-400 mt-1">{totalElements} {totalElements === 1 ? 'item' : 'items'} tracked</p>
-          </div>
-          <button onClick={() => navigate('/products/new')} className="flex items-center gap-2 bg-emerald-600 dark:bg-emerald-500 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 dark:hover:bg-emerald-600 font-semibold shadow-md">
-            <Plus className="w-5 h-5" /> Add Product
-          </button>
-        </div>
+      <div className="min-h-screen flex flex-col bg-gradient-to-br from-emerald-50 via-amber-50 to-emerald-100 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
+        <Navbar />
+        <main className="flex-1">
+          <div className="max-w-7xl mx-auto px-4 py-8">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h1 className="text-3xl font-bold text-emerald-800 dark:text-emerald-300">Your Products</h1>
+                <p className="text-emerald-700 dark:text-emerald-400 mt-1">{totalElements} {totalElements === 1 ? 'item' : 'items'} tracked</p>
+              </div>
+              <button onClick={() => navigate('/products/new')} className="flex items-center gap-2 bg-emerald-600 dark:bg-emerald-500 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 dark:hover:bg-emerald-600 font-semibold shadow-md">
+                <Plus className="w-4 h-4" /> Add Product
+              </button>
+            </div>
 
-        {/* Responsive Controls Row */}
-        <div className="flex flex-wrap gap-2 mb-6 items-center">
-          {/* Search — grows to fill available space */}
-          <div className="flex items-center bg-white dark:bg-slate-800 px-3 py-2 rounded-lg border-2 border-emerald-200 dark:border-slate-700 shadow-sm flex-1 min-w-[180px]">
-            <input
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search by name or tags"
-              className="outline-none w-full text-sm bg-transparent text-gray-700 dark:text-slate-200 placeholder:text-gray-500 dark:placeholder:text-slate-400"
-            />
-            {searchQuery ? (
-              <button onClick={() => { setSearchQuery(''); setDebouncedQuery(''); fetchProducts(0).catch(() => {}); }} className="ml-2 text-gray-500 dark:text-slate-400 text-sm">Clear</button>
+            {/* ── Controls ── */}
+            {/* On mobile: search full-width on top, then sort+filter+refresh in one row below */}
+            {/* On sm+: everything in one flex-wrap row (original behaviour) */}
+            <div className="mb-6">
+
+              {/* Search — always full-width on mobile; shrinks/grows on desktop */}
+              <div className="flex items-center bg-white dark:bg-slate-800 px-3 py-2 rounded-lg border-2 border-emerald-200 dark:border-slate-700 shadow-sm w-full sm:hidden mb-2">
+                <input
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="Search by name or tags"
+                    className="outline-none w-full text-sm bg-transparent text-gray-700 dark:text-slate-200 placeholder:text-gray-500 dark:placeholder:text-slate-400"
+                />
+                {searchQuery ? (
+                    <button onClick={() => { setSearchQuery(''); setDebouncedQuery(''); fetchProducts(0).catch(() => {}); }} className="ml-2 text-gray-500 dark:text-slate-400 text-sm">Clear</button>
+                ) : (
+                    <Search className="w-5 h-5 text-emerald-600 ml-2 shrink-0" />
+                )}
+              </div>
+
+              {/* Sort + Filter + Refresh row — fills width on mobile */}
+              <div className="flex items-center gap-2 sm:hidden">
+                <div className="relative flex-1">
+                  <SortControl sortBy={sortBy} sortDir={sortDirection} onChange={applySortPreference} labels={SORT_LABELS} fullWidth />
+                </div>
+                <div className="relative flex-1">
+                  <FilterControl
+                      statuses={filterStatuses}
+                      notificationFreqs={filterNotificationFreqs}
+                      onChange={(s, f) => { setFilterStatuses(s); setFilterNotificationFreqs(f); persistFilters(s, f); fetchProducts(0, sortBy, sortDirection, s, f).catch(() => {}); }}
+                      fullWidth
+                  />
+                </div>
+                <button
+                    disabled={loading}
+                    onClick={() => fetchProducts(pageNumber)}
+                    className="flex items-center justify-center bg-white dark:bg-slate-800 p-2.5 rounded-lg border-2 border-emerald-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                >
+                  <RefreshCw className={`w-5 h-5 text-emerald-700 dark:text-emerald-300 ${loading ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+
+              {/* Desktop: original single-row layout */}
+              <div className="hidden sm:flex flex-wrap gap-2 items-center">
+                <div className="flex items-center bg-white dark:bg-slate-800 px-3 py-2 rounded-lg border-2 border-emerald-200 dark:border-slate-700 shadow-sm flex-1 min-w-[180px]">
+                  <input
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      placeholder="Search by name or tags"
+                      className="outline-none w-full text-sm bg-transparent text-gray-700 dark:text-slate-200 placeholder:text-gray-500 dark:placeholder:text-slate-400"
+                  />
+                  {searchQuery ? (
+                      <button onClick={() => { setSearchQuery(''); setDebouncedQuery(''); fetchProducts(0).catch(() => {}); }} className="ml-2 text-gray-500 dark:text-slate-400 text-sm">Clear</button>
+                  ) : (
+                      <Search className="w-5 h-5 text-emerald-600 ml-2 shrink-0" />
+                  )}
+                </div>
+                <div className="relative shrink-0">
+                  <SortControl sortBy={sortBy} sortDir={sortDirection} onChange={applySortPreference} labels={SORT_LABELS} />
+                </div>
+                <div className="relative shrink-0">
+                  <FilterControl
+                      statuses={filterStatuses}
+                      notificationFreqs={filterNotificationFreqs}
+                      onChange={(s, f) => { setFilterStatuses(s); setFilterNotificationFreqs(f); persistFilters(s, f); fetchProducts(0, sortBy, sortDirection, s, f).catch(() => {}); }}
+                  />
+                </div>
+                <button
+                    disabled={loading}
+                    onClick={() => fetchProducts(pageNumber)}
+                    className="flex items-center gap-2 bg-white dark:bg-slate-800 px-4 py-2 rounded-lg shadow-md dark:shadow-black/40 border-2 border-emerald-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                >
+                  <RefreshCw className="w-5 h-5" />
+                  <span className="hidden sm:inline">Refresh</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Product grid and conditional rendering */}
+            {error && (<div className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">{error}</div>)}
+
+            {loading ? (
+                <div className="flex justify-center items-center h-64"><div className="animate-spin h-12 w-12 rounded-full border-4 border-emerald-600 border-t-transparent" /></div>
+            ) : products.length === 0 ? (
+                (filterStatuses.length > 0 || filterNotificationFreqs.length > 0) ? (
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg dark:shadow-black/40 p-8 text-center">
+                      <div className="mb-4"><SearchX className="w-12 h-12 text-emerald-600 mx-auto" /></div>
+                      <h2 className="text-2xl font-bold text-emerald-800 dark:text-emerald-300 mb-2">No results</h2>
+                      <p className="text-gray-600 dark:text-slate-400 mb-6">No products match your current filters. Try adjusting or clearing filters to see more items.</p>
+                      <div className="flex items-center justify-center gap-3">
+                        <button onClick={() => { setFilterStatuses([]); setFilterNotificationFreqs([]); persistFilters([],[]); fetchProducts(0, sortBy, sortDirection, [], []).catch(()=>{}); }} className="bg-emerald-600 text-white px-4 py-2 rounded-lg">Clear filters</button>
+                        <button onClick={() => navigate('/products/new')} className="bg-white dark:bg-slate-700 border border-emerald-200 dark:border-slate-600 text-emerald-800 dark:text-slate-100 px-4 py-2 rounded-lg hover:bg-emerald-50 dark:hover:bg-slate-600">Add Product</button>
+                      </div>
+                    </div>
+                ) : (
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg dark:shadow-black/40 p-12 text-center">
+                      <div className="text-6xl mb-4">🥗</div>
+                      <h2 className="text-2xl font-bold text-emerald-800 dark:text-emerald-300 mb-2">No products yet</h2>
+                      <p className="text-gray-600 dark:text-slate-400 mb-6">Start tracking your food to reduce waste and save money</p>
+                      <button onClick={() => navigate('/products/new')} className="bg-emerald-600 dark:bg-emerald-500 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 dark:hover:bg-emerald-600 shadow-md">Add Your First Product</button>
+                    </div>
+                )
             ) : (
-              <Search className="w-5 h-5 text-emerald-600 ml-2 shrink-0" />
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                    {products.map(product => (
+                        <ProductCard key={product.id} product={product} />
+                    ))}
+                  </div>
+
+                  {totalPages > 1 && (
+                      <div className="flex justify-center items-center gap-4 mt-8">
+                        <button disabled={pageNumber === 0} onClick={handlePrevPage} className="flex items-center gap-2 bg-white dark:bg-slate-800 px-4 py-2 rounded-lg border-2 border-emerald-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50"><ChevronLeft className="w-5 h-5" /> Previous</button>
+                        <span className="font-semibold text-emerald-800 dark:text-emerald-300">Page {pageNumber + 1} of {totalPages}</span>
+                        <button disabled={pageNumber >= totalPages - 1} onClick={handleNextPage} className="flex items-center gap-2 bg-white dark:bg-slate-800 px-4 py-2 rounded-lg border-2 border-emerald-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50">Next <ChevronRight className="w-5 h-5" /></button>
+                      </div>
+                  )}
+                </>
             )}
           </div>
-          {/* Sort */}
-          <div className="relative shrink-0">
-            <SortControl sortBy={sortBy} sortDir={sortDirection} onChange={applySortPreference} labels={SORT_LABELS} />
-          </div>
-          {/* Filter */}
-          <div className="relative shrink-0">
-            <FilterControl
-              statuses={filterStatuses}
-              notificationFreqs={filterNotificationFreqs}
-              onChange={(s, f) => { setFilterStatuses(s); setFilterNotificationFreqs(f); persistFilters(s, f); fetchProducts(0, sortBy, sortDirection, s, f).catch(() => {}); }}
-            />
-          </div>
-          {/* Refresh */}
-          <button
-            disabled={loading}
-            onClick={() => fetchProducts(pageNumber)}
-            className="flex items-center gap-2 bg-white dark:bg-slate-800 px-4 py-2 rounded-lg shadow-md dark:shadow-black/40 border-2 border-emerald-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-          >
-            <RefreshCw className="w-5 h-5" />
-            <span className="hidden sm:inline">Refresh</span>
-          </button>
-        </div>
-
-         {/* Product grid and conditional rendering */}
-         {error && (<div className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">{error}</div>)}
-
-         {loading ? (
-           <div className="flex justify-center items-center h-64"><div className="animate-spin h-12 w-12 rounded-full border-4 border-emerald-600 border-t-transparent" /></div>
-         ) : products.length === 0 ? (
-           (filterStatuses.length > 0 || filterNotificationFreqs.length > 0) ? (
-             <div className="bg-white dark:bg-slate-800    rounded-xl shadow-lg dark:shadow-black/40    p-8 text-center">
-               <div className="mb-4"><SearchX className="w-12 h-12 text-emerald-600 mx-auto" /></div>
-               <h2 className="text-2xl font-bold text-emerald-800 dark:text-emerald-300 mb-2">No results</h2>
-               <p className="text-gray-600 dark:text-slate-400 mb-6">No products match your current filters. Try adjusting or clearing filters to see more items.</p>
-               <div className="flex items-center justify-center gap-3">
-                 <button onClick={() => { setFilterStatuses([]); setFilterNotificationFreqs([]); persistFilters([],[]); fetchProducts(0, sortBy, sortDirection, [], []).catch(()=>{}); }} className="bg-emerald-600 text-white px-4 py-2 rounded-lg">Clear filters</button>
-                 <button onClick={() => navigate('/products/new')} className="bg-white dark:bg-slate-700 border border-emerald-200 dark:border-slate-600 text-emerald-800 dark:text-slate-100 px-4 py-2 rounded-lg hover:bg-emerald-50 dark:hover:bg-slate-600">Add Product</button>
-               </div>
-             </div>
-           ) : (
-             <div className="bg-white dark:bg-slate-800    rounded-xl shadow-lg dark:shadow-black/40    p-12 text-center">
-               <div className="text-6xl mb-4">🥗</div>
-               <h2 className="text-2xl font-bold text-emerald-800 dark:text-emerald-300 mb-2">No products yet</h2>
-               <p className="text-gray-600 dark:text-slate-400 mb-6">Start tracking your food to reduce waste and save money</p>
-               <button onClick={() => navigate('/products/new')} className="bg-emerald-600 dark:bg-emerald-500 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 dark:hover:bg-emerald-600 shadow-md">Add Your First Product</button>
-             </div>
-           )
-         ) : (
-           <>
-             {/* Product grid only, controls removed from here */}
-             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-               {products.map(product => (
-                 <ProductCard key={product.id} product={product} />
-               ))}
-             </div>
-
-             {totalPages > 1 && (
-               <div className="flex justify-center items-center gap-4 mt-8">
-                 <button disabled={pageNumber === 0} onClick={handlePrevPage} className="flex items-center gap-2    bg-white dark:bg-slate-800   px-4 py-2 rounded-lg    border-2 border-emerald-200 dark:border-slate-700   hover:bg-gray-50 dark:hover:bg-slate-700   disabled:opacity-50"><ChevronLeft className="w-5 h-5" /> Previous</button>
-                 <span className="font-semibold text-emerald-800 dark:text-emerald-300">Page {pageNumber + 1} of {totalPages}</span>
-                 <button disabled={pageNumber >= totalPages - 1} onClick={handleNextPage} className="flex items-center gap-2    bg-white dark:bg-slate-800   px-4 py-2 rounded-lg    border-2 border-emerald-200 dark:border-slate-700   hover:bg-gray-50 dark:hover:bg-slate-700   disabled:opacity-50">Next <ChevronRight className="w-5 h-5" /></button>
-               </div>
-             )}
-           </>
-         )}
-       </div>
-       </main>
-       <Footer />
-     </div>
-   );
+        </main>
+        <Footer />
+      </div>
+  );
 }
 
 // --- Small typed subcomponents ---
@@ -277,10 +308,11 @@ type SortControlProps = {
   sortDir: 'asc'|'desc';
   onChange: (b: string, d: 'asc'|'desc') => void;
   labels: Record<string,string>;
+  fullWidth?: boolean;
 };
 
 function SortControl(props: SortControlProps) {
-  const { sortBy, sortDir, onChange, labels } = props;
+  const { sortBy, sortDir, onChange, labels, fullWidth } = props;
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
 
@@ -291,31 +323,35 @@ function SortControl(props: SortControlProps) {
   }, []);
 
   return (
-    <div ref={ref} className="relative">
-      <div className="inline-flex items-stretch rounded-lg shadow-sm">
-        <button onClick={() => setOpen(v => !v)} className="flex items-center gap-2 bg-white dark:bg-slate-800 px-4 py-2 rounded-l-lg border-2 border-emerald-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700" aria-haspopup="true" aria-expanded={open}>
-          <span className="font-medium text-emerald-700 dark:text-emerald-300">Sort</span>
-          <span className="text-sm text-gray-600 dark:text-slate-300">{labels[sortBy] || sortBy}</span>
-          <svg className="w-4 h-4 text-gray-500 dark:text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9l6 6 6-6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        </button>
-        <button title="Toggle direction" onClick={() => onChange(sortBy, sortDir === 'asc' ? 'desc' : 'asc')} className="px-3 py-2 rounded-r-lg bg-white dark:bg-slate-800 border-t-2 border-b-2 border-r-2 border-emerald-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center" aria-label="Toggle sort direction">
-          {sortDir === 'asc' ? <ArrowUpFromDot className="w-4 h-4 text-emerald-700 dark:text-emerald-300" /> : <ArrowDownToDot className="w-4 h-4 text-emerald-700 dark:text-emerald-300" />}
-        </button>
-      </div>
-
-      {open && (
-        <div className="absolute right-0 mt-12 w-64 bg-white dark:bg-slate-800 rounded-lg shadow-lg dark:shadow-black/40 border border-emerald-100 dark:border-slate-700 z-50">
-          <div className="p-3">
-            <h4 className="text-sm font-semibold text-emerald-800 dark:text-emerald-300 mb-2">Sort by</h4>
-            <div className="max-h-56 overflow-auto">
-              {Object.keys(labels).map(key => (
-                <button key={key} onClick={() => { onChange(key, sortDir); setOpen(false); }} className={`w-full text-left px-3 py-2 rounded-md hover:bg-emerald-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200 ${key === sortBy ? 'bg-emerald-50 dark:bg-slate-700 font-semibold' : ''}`}>{labels[key]}</button>
-              ))}
-            </div>
-          </div>
+      <div ref={ref} className="relative">
+        <div className={`inline-flex items-stretch rounded-lg shadow-sm ${fullWidth ? 'w-full' : ''}`}>
+          <button
+              onClick={() => setOpen(v => !v)}
+              className={`flex items-center gap-1.5 bg-white dark:bg-slate-800 px-3 py-2 rounded-l-lg border-2 border-emerald-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 ${fullWidth ? 'flex-1 min-w-0' : 'gap-2 px-4'}`}
+              aria-haspopup="true" aria-expanded={open}
+          >
+            <span className="font-medium text-emerald-700 dark:text-emerald-300 text-sm shrink-0">Sort</span>
+            <span className={`text-gray-600 dark:text-slate-300 truncate ${fullWidth ? 'text-xs' : 'text-sm'}`}>{labels[sortBy] || sortBy}</span>
+            <svg className={`text-gray-500 dark:text-slate-400 shrink-0 ${fullWidth ? 'w-3 h-3 ml-auto' : 'w-4 h-4'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9l6 6 6-6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+          <button title="Toggle direction" onClick={() => onChange(sortBy, sortDir === 'asc' ? 'desc' : 'asc')} className="px-2.5 py-2 rounded-r-lg bg-white dark:bg-slate-800 border-t-2 border-b-2 border-r-2 border-emerald-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center shrink-0" aria-label="Toggle sort direction">
+            {sortDir === 'asc' ? <ArrowUpFromDot className="w-4 h-4 text-emerald-700 dark:text-emerald-300" /> : <ArrowDownToDot className="w-4 h-4 text-emerald-700 dark:text-emerald-300" />}
+          </button>
         </div>
-      )}
-    </div>
+
+        {open && (
+            <div className="absolute left-0 top-full mt-1 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-lg dark:shadow-black/40 border border-emerald-100 dark:border-slate-700 z-50">
+              <div className="p-3">
+                <h4 className="text-sm font-semibold text-emerald-800 dark:text-emerald-300 mb-2">Sort by</h4>
+                <div className="max-h-56 overflow-auto">
+                  {Object.keys(labels).map(key => (
+                      <button key={key} onClick={() => { onChange(key, sortDir); setOpen(false); }} className={`w-full text-left px-3 py-2 rounded-md hover:bg-emerald-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200 text-sm ${key === sortBy ? 'bg-emerald-50 dark:bg-slate-700 font-semibold' : ''}`}>{labels[key]}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+        )}
+      </div>
   );
 }
 
@@ -323,9 +359,10 @@ type FilterControlProps = {
   statuses: string[];
   notificationFreqs: string[];
   onChange: (s: string[], f: string[]) => void;
+  fullWidth?: boolean;
 };
 
-function FilterControl({ statuses, notificationFreqs, onChange }: FilterControlProps) {
+function FilterControl({ statuses, notificationFreqs, onChange, fullWidth }: FilterControlProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -349,44 +386,49 @@ function FilterControl({ statuses, notificationFreqs, onChange }: FilterControlP
   useEffect(() => setLocalStatuses(statuses), [statuses]);
   useEffect(() => setLocalNf(notificationFreqs), [notificationFreqs]);
 
+  const activeCount = localStatuses.length + localNf.length;
+
   return (
-    <div ref={ref} className="relative">
-      <button onClick={() => setOpen(v => !v)} className="flex items-center gap-2 bg-white dark:bg-slate-800 px-4 py-2 rounded-lg border-2 border-emerald-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700">
-        <span className="font-medium text-emerald-700 dark:text-emerald-300">Filter</span>
-        <span className="text-sm text-gray-600 dark:text-slate-300">{localStatuses.length + localNf.length > 0 ? `${localStatuses.length + localNf.length} active` : 'All'}</span>
-        <svg className="w-4 h-4 text-gray-500 dark:text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9l6 6 6-6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-      </button>
+      <div ref={ref} className={`relative ${fullWidth ? 'w-full' : ''}`}>
+        <button
+            onClick={() => setOpen(v => !v)}
+            className={`flex items-center gap-1.5 bg-white dark:bg-slate-800 px-3 py-2 rounded-lg border-2 border-emerald-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 ${fullWidth ? 'w-full' : 'gap-2 px-4'}`}
+        >
+          <span className="font-medium text-emerald-700 dark:text-emerald-300 text-sm shrink-0">Filter</span>
+          <span className={`text-gray-600 dark:text-slate-300 truncate ${fullWidth ? 'text-xs' : 'text-sm'}`}>
+          {activeCount > 0 ? `${activeCount} active` : 'All'}
+        </span>
+          <svg className={`text-gray-500 dark:text-slate-400 shrink-0 ml-auto ${fullWidth ? 'w-3 h-3' : 'w-4 h-4'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9l6 6 6-6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
 
-      {open && (
-        <div className="absolute right-0 mt-12 w-72 bg-white dark:bg-slate-800 rounded-lg shadow-lg dark:shadow-black/40 border border-emerald-100 dark:border-slate-700 z-50 p-3">
-          <div>
-            <h4 className="text-sm font-semibold text-emerald-800 dark:text-emerald-300 mb-2">Status</h4>
-            <div className="flex flex-col gap-1 mb-3">
-              {STATUS_OPTIONS.map(o => (
-                <button key={o} type="button" onClick={() => toggleOption(localStatuses, setLocalStatuses, o)} className={`w-full text-left px-3 py-2 rounded-md hover:bg-emerald-50 dark:hover:bg-slate-700 inline-flex items-center gap-2 text-gray-700 dark:text-slate-200 ${localStatuses.includes(o) ? 'bg-emerald-50 dark:bg-slate-700 font-semibold' : ''}`}>
-                  <input type="checkbox" checked={localStatuses.includes(o)} readOnly className="pointer-events-none" />
-                  <span className="text-sm">{o}</span>
-                </button>
-              ))}
-            </div>
+        {open && (
+            <div className="absolute right-0 top-full mt-1 w-64 bg-white dark:bg-slate-800 rounded-lg shadow-lg dark:shadow-black/40 border border-emerald-100 dark:border-slate-700 z-50 p-3">
+              <h4 className="text-sm font-semibold text-emerald-800 dark:text-emerald-300 mb-2">Status</h4>
+              <div className="flex flex-col gap-1 mb-3">
+                {STATUS_OPTIONS.map(o => (
+                    <button key={o} type="button" onClick={() => toggleOption(localStatuses, setLocalStatuses, o)} className={`w-full text-left px-3 py-2 rounded-md hover:bg-emerald-50 dark:hover:bg-slate-700 inline-flex items-center gap-2 text-gray-700 dark:text-slate-200 ${localStatuses.includes(o) ? 'bg-emerald-50 dark:bg-slate-700 font-semibold' : ''}`}>
+                      <input type="checkbox" checked={localStatuses.includes(o)} readOnly className="pointer-events-none" />
+                      <span className="text-sm">{o}</span>
+                    </button>
+                ))}
+              </div>
 
-            <h4 className="text-sm font-semibold text-emerald-800 dark:text-emerald-300 mb-2">Notification</h4>
-            <div className="flex flex-col gap-1 mb-3">
-              {NF_OPTIONS.map(o => (
-                <button key={o} type="button" onClick={() => toggleOption(localNf, setLocalNf, o)} className={`w-full text-left px-3 py-2 rounded-md hover:bg-emerald-50 dark:hover:bg-slate-700 inline-flex items-center gap-2 text-gray-700 dark:text-slate-200 ${localNf.includes(o) ? 'bg-emerald-50 dark:bg-slate-700 font-semibold' : ''}`}>
-                  <input type="checkbox" checked={localNf.includes(o)} readOnly className="pointer-events-none" />
-                  <span className="text-sm">{o}</span>
-                </button>
-              ))}
-            </div>
+              <h4 className="text-sm font-semibold text-emerald-800 dark:text-emerald-300 mb-2">Notification</h4>
+              <div className="flex flex-col gap-1 mb-3">
+                {NF_OPTIONS.map(o => (
+                    <button key={o} type="button" onClick={() => toggleOption(localNf, setLocalNf, o)} className={`w-full text-left px-3 py-2 rounded-md hover:bg-emerald-50 dark:hover:bg-slate-700 inline-flex items-center gap-2 text-gray-700 dark:text-slate-200 ${localNf.includes(o) ? 'bg-emerald-50 dark:bg-slate-700 font-semibold' : ''}`}>
+                      <input type="checkbox" checked={localNf.includes(o)} readOnly className="pointer-events-none" />
+                      <span className="text-sm">{o}</span>
+                    </button>
+                ))}
+              </div>
 
-            <div className="flex justify-end gap-2">
-              <button onClick={() => { setLocalStatuses([]); setLocalNf([]); }} className="px-3 py-1 rounded bg-emerald-50 dark:bg-slate-700 text-sm text-emerald-700 dark:text-slate-200">Clear</button>
-              <button onClick={() => { onChange(localStatuses, localNf); setOpen(false); }} className="px-3 py-1 rounded bg-emerald-600 text-white">Apply</button>
+              <div className="flex justify-end gap-2">
+                <button onClick={() => { setLocalStatuses([]); setLocalNf([]); }} className="px-3 py-1 rounded bg-emerald-50 dark:bg-slate-700 text-sm text-emerald-700 dark:text-slate-200">Clear</button>
+                <button onClick={() => { onChange(localStatuses, localNf); setOpen(false); }} className="px-3 py-1 rounded bg-emerald-600 text-white">Apply</button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
   );
 }

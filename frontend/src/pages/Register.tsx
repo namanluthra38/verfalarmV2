@@ -1,7 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { UserPlus, Leaf } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 
 export default function Register() {
   const [email, setEmail] = useState('');
@@ -47,12 +47,9 @@ export default function Register() {
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
-            <div className="bg-amber-500 p-3 rounded-full">
-              <Leaf className="w-8 h-8 text-emerald-800" />
-            </div>
+            <img src="/icons/verfalarm-icon.png" alt="Verfalarm" className="w-16 h-16 object-contain" />
           </div>
-          <h1 className="text-4xl font-bold text-emerald-800 dark:text-emerald-300 mb-2">Verfalarm</h1>
-          <p className="text-emerald-700 dark:text-emerald-400">Join us in fighting food waste!</p>
+          <p className="text-emerald-700 dark:text-emerald-400">Create an account to manage products and receive timely alerts.</p>
         </div>
 
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl dark:shadow-black/40 border border-emerald-100 dark:border-slate-700 p-8">
@@ -137,7 +134,7 @@ export default function Register() {
         </div>
 
         <p className="text-center text-sm text-emerald-700 dark:text-emerald-300 mt-6">
-          Smart food tracking for a sustainable future
+          Smart product tracking and personalized reminders
         </p>
       </div>
     </div>

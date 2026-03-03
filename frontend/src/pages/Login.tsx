@@ -1,7 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LogIn, Leaf } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -31,12 +31,9 @@ export default function Login() {
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
-            <div className="bg-emerald-600 p-3 rounded-full">
-              <Leaf className="w-8 h-8 text-amber-100" />
-            </div>
+            <img src="/icons/verfalarm-icon.png" alt="Verfalarm" className="w-16 h-16 object-contain" />
           </div>
-          <h1 className="text-4xl font-bold text-emerald-800 dark:text-emerald-300 mb-2">Verfalarm</h1>
-          <p className="text-emerald-700 dark:text-emerald-400">Welcome back! Keep your food fresh.</p>
+          <p className="text-emerald-700 dark:text-emerald-400">Welcome back! Stay on top of your products and alerts.</p>
         </div>
 
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl dark:shadow-black/40 border border-emerald-100 dark:border-slate-700 p-8">
@@ -105,7 +102,7 @@ export default function Login() {
         </div>
 
         <p className="text-center text-sm text-emerald-700 dark:text-emerald-300 mt-6">
-          Track your food, reduce waste, save money
+          Track your products, get timely alerts, save money
         </p>
       </div>
     </div>

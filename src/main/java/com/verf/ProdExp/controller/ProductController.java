@@ -213,6 +213,12 @@ public class ProductController {
         return ResponseEntity.ok(productService.updateNotificationFrequency(id, request.notificationFrequency()));
     }
 
+    @DeleteMapping("/{id}/notification-frequency-override")
+    @PreAuthorize("hasRole('ADMIN') or @securityService.isProductOwner(#id)")
+    public ResponseEntity<ProductResponse> clearNotificationFrequencyOverride(@PathVariable String id) {
+        return ResponseEntity.ok(productService.clearNotificationFrequencyOverride(id));
+    }
+
     @PutMapping("/{id}/tags")
     @PreAuthorize("hasRole('ADMIN') or @securityService.isProductOwner(#id)")
     public ResponseEntity<ProductResponse> replaceTags(@PathVariable String id,

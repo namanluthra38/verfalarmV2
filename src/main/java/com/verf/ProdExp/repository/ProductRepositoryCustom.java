@@ -1,6 +1,7 @@
 package com.verf.ProdExp.repository;
 
 import com.verf.ProdExp.entity.NotificationFrequency;
+import com.verf.ProdExp.entity.Product;
 import com.verf.ProdExp.entity.Status;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,4 +13,7 @@ public interface ProductRepositoryCustom {
 
     // Paginated search over nameTokens field using AND semantics for provided tokens
     Page<com.verf.ProdExp.entity.Product> searchByUserNameTokens(String userId, List<String> tokens, Pageable pageable);
+
+    // Scheduler scan across active products in batches.
+    Page<Product> findActiveCandidatesForNotifications(Pageable pageable);
 }

@@ -14,8 +14,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Repository
 @RequiredArgsConstructor
@@ -71,6 +69,37 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
             pageable.getSort().forEach(order -> q.with(org.springframework.data.domain.Sort.by(order)));
         }
 
+        q.with(pageable);
+
+        List<Product> list = mongoTemplate.find(q, Product.class);
+        return new PageImpl<>(list, pageable, total);
+    }
+
+    @Override
+    public Page<Product> findActiveCandidatesForNotifications(Pageable pageable) {
+        Query q = new Query();
+
+        // Active means not finished/expired; include null/absent status for backward compatibility.
+        Criteria activeStatus = new Criteria().orOperator(
+                Criteria.where("status").is(Status.AVAILABLE),
+                Criteria.where("status").is(null),
+                Criteria.where("status").exists(false)
+        );
+
+        // Ignore explicit NEVER products but include null/absent values for migration compatibility.
+        Criteria activeFrequency = new Criteria().orOperator(
+                Criteria.where("notificationFrequency").ne(NotificationFrequency.NEVER),
+                Criteria.where("notificationFrequency").is(null),
+                Criteria.where("notificationFrequency").exists(false)
+        );
+
+        q.addCriteria(new Criteria().andOperator(activeStatus, activeFrequency));
+
+        long total = mongoTemplate.count(q, Product.class);
+
+        if (pageable.getSort().isSorted()) {
+            pageable.getSort().forEach(order -> q.with(org.springframework.data.domain.Sort.by(order)));
+        }
         q.with(pageable);
 
         List<Product> list = mongoTemplate.find(q, Product.class);

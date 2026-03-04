@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.util.List;
 import com.verf.ProdExp.entity.Status;
 import com.verf.ProdExp.entity.NotificationFrequency;
+import com.verf.ProdExp.entity.NotificationFrequencySource;
 import com.verf.ProdExp.entity.Unit;
 
 public record ProductResponse(
@@ -20,6 +21,9 @@ public record ProductResponse(
         Instant updatedAt,
         Status status,
         NotificationFrequency notificationFrequency,
+        NotificationFrequencySource notificationFrequencySource,
+        Instant lastNotificationSentAt,
+        Instant nextNotificationAt,
         List<String> tags
 ) {
 }

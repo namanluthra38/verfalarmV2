@@ -23,6 +23,11 @@ import java.util.List;
         @CompoundIndex(
                 name = "user_name_tokens_idx",
                 def = "{'userId': 1, 'nameTokens': 1}"
+        ),
+        // Supports scheduler scans over active products by status/next run/user.
+        @CompoundIndex(
+                name = "status_next_notification_user_idx",
+                def = "{'status': 1, 'nextNotificationAt': 1, 'userId': 1}"
         )
 })
 public class Product {
@@ -53,6 +58,12 @@ public class Product {
 
     // Controls reminder cadence for this product
     private NotificationFrequency notificationFrequency;
+    // Manual reminder cadence override; when non-null it takes precedence over auto-calculated frequency.
+    private NotificationFrequency notificationFrequencyOverride;
+    // Last successful reminder send timestamp.
+    private Instant lastNotificationSentAt;
+    // Next due timestamp for reminder processing.
+    private Instant nextNotificationAt;
 
     // Optional labels used for grouping and search token generation
     private List<String> tags;

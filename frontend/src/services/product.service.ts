@@ -168,6 +168,19 @@ export class ProductService {
     );
   }
 
+  static async clearNotificationFrequencyOverride(
+    id: string,
+    token: string
+  ): Promise<ProductResponse> {
+    return this.fetchApi<ProductResponse>(
+      API_CONFIG.ENDPOINTS.PRODUCTS.CLEAR_NOTIFICATION_FREQUENCY_OVERRIDE(id),
+      token,
+      {
+        method: 'DELETE',
+      }
+    );
+  }
+
   static async replaceTags(
     id: string,
     data: TagsRequest,

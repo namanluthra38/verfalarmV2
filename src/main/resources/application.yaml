@@ -54,6 +54,11 @@ spring:
 app:
   backendBaseUrl: ${BACKEND_BASE_URL:http://localhost:8080}
   frontendBaseUrl: ${FRONTEND_BASE_URL:http://localhost:5173}
+  notifications:
+    enabled: ${NOTIFICATIONS_ENABLED:true}
+    cron: ${NOTIFICATIONS_CRON:0 * * * * *}
+    timezone: ${NOTIFICATIONS_TIMEZONE:UTC}
+    batchSize: ${NOTIFICATIONS_BATCH_SIZE:200}
 
   jwt:
     secret: ${JWT_SECRET}

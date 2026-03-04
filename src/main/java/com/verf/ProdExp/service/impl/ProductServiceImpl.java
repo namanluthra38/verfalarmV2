@@ -10,9 +10,9 @@ import com.verf.ProdExp.exception.BadRequestException;
 import com.verf.ProdExp.exception.ResourceNotFoundException;
 import com.verf.ProdExp.mapper.ProductMapper;
 import com.verf.ProdExp.repository.ProductRepository;
+import com.verf.ProdExp.service.NotificationSchedulePolicy;
 import com.verf.ProdExp.service.ProductService;
 import com.verf.ProdExp.util.AnalysisUtil;
-import com.verf.ProdExp.util.NotificationFrequencyCalculator;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -29,6 +30,7 @@ public class ProductServiceImpl implements ProductService {
     @Value("${spring.data.redis.url}")
     private String check;
     private final ProductRepository repository;
+    private final NotificationSchedulePolicy notificationSchedulePolicy;
 
     @Override
     public ProductResponse create(ProductRequest request) {
@@ -36,6 +38,7 @@ public class ProductServiceImpl implements ProductService {
         Product product = ProductMapper.toEntity(request);
         // ensure status is correct
         product.setStatus(ProductMapper.computeStatus(product));
+        notificationSchedulePolicy.reconcileAfterDataChange(product, Instant.now());
         // nameLower/nameTokens are already set by ProductMapper.toEntity
         Product saved = repository.save(product);
         return ProductMapper.toResponse(saved);
@@ -77,16 +80,13 @@ public class ProductServiceImpl implements ProductService {
         existing.setUnit(request.unit());
         existing.setPurchaseDate(request.purchaseDate());
         existing.setExpirationDate(request.expirationDate());
-        // Compute notification frequency server-side for consistency
-        existing.setNotificationFrequency(NotificationFrequencyCalculator.calculate(
-                request.purchaseDate(), request.expirationDate(), request.quantityBought(), request.quantityConsumed()
-        ));
         // Normalize tags (persist null for empty) and recompute tokens to include tags
         existing.setTags(request.tags() == null || request.tags().isEmpty() ? null : List.copyOf(request.tags()));
         ProductMapper.recomputeNameTokens(existing);
 
         // Recompute status after all field changes
         existing.setStatus(ProductMapper.computeStatus(existing));
+        notificationSchedulePolicy.reconcileAfterDataChange(existing, Instant.now());
 
         Product saved = repository.save(existing);
         return ProductMapper.toResponse(saved);
@@ -116,6 +116,7 @@ public class ProductServiceImpl implements ProductService {
         existing.setQuantityConsumed(request.quantityConsumed());
         // Recompute status after quantity change
         existing.setStatus(ProductMapper.computeStatus(existing));
+        notificationSchedulePolicy.reconcileAfterDataChange(existing, Instant.now());
 
         Product saved = repository.save(existing);
         return ProductMapper.toResponse(saved);
@@ -149,7 +150,16 @@ public class ProductServiceImpl implements ProductService {
         if (frequency == null) throw new BadRequestException("notificationFrequency is required");
         Product existing = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with id '" + id + "' not found"));
-        existing.setNotificationFrequency(frequency);
+        notificationSchedulePolicy.applyManualOverride(existing, frequency, Instant.now());
+        Product saved = repository.save(existing);
+        return ProductMapper.toResponse(saved);
+    }
+
+    @Override
+    public ProductResponse clearNotificationFrequencyOverride(String id) {
+        Product existing = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with id '" + id + "' not found"));
+        notificationSchedulePolicy.clearManualOverride(existing, Instant.now());
         Product saved = repository.save(existing);
         return ProductMapper.toResponse(saved);
     }

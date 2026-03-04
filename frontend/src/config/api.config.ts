@@ -1,5 +1,5 @@
 export const API_CONFIG = {
-  BASE_URL: import.meta.env.API_URL || 'https://verfalarm-app.onrender.com',
+  BASE_URL: import.meta.env.API_URL || 'http://localhost:8080',
   ENDPOINTS: {
     AUTH: {
       REGISTER: '/api/auth/register',
@@ -19,6 +19,7 @@ export const API_CONFIG = {
       RECOMPUTE_BY_USER: (userId: string) => `/api/products/user/${userId}/recompute-statuses`,
       QUANTITY_CONSUMED: (id: string) => `/api/products/${id}/quantity-consumed`,
       NOTIFICATION_FREQUENCY: (id: string) => `/api/products/${id}/notification-frequency`,
+      CLEAR_NOTIFICATION_FREQUENCY_OVERRIDE: (id: string) => `/api/products/${id}/notification-frequency-override`,
       TAGS: (id: string) => `/api/products/${id}/tags`,
     },
   },

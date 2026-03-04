@@ -30,7 +30,8 @@ export interface UpdateUserRequest {
   displayName: string;
 }
 
-export type NotificationFrequency = 'DAILY' | 'WEEKLY' | 'MONTHLY';
+export type NotificationFrequency = 'NEVER' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY';
+export type NotificationFrequencySource = 'AUTO' | 'MANUAL';
 
 export interface ProductRequest {
   name: string;
@@ -55,6 +56,9 @@ export interface ProductResponse {
   updatedAt: string;
   status: ProductStatus;
   notificationFrequency?: NotificationFrequency;
+  notificationFrequencySource?: NotificationFrequencySource;
+  lastNotificationSentAt?: string;
+  nextNotificationAt?: string;
   tags?: string[];
 }
 

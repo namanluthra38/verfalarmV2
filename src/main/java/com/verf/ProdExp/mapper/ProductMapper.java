@@ -2,10 +2,10 @@ package com.verf.ProdExp.mapper;
 
 import com.verf.ProdExp.dto.ProductRequest;
 import com.verf.ProdExp.dto.ProductResponse;
+import com.verf.ProdExp.entity.NotificationFrequencySource;
 import com.verf.ProdExp.entity.Product;
 import com.verf.ProdExp.entity.Status;
 import com.verf.ProdExp.entity.NotificationFrequency;
-import com.verf.ProdExp.util.NotificationFrequencyCalculator;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -17,10 +17,6 @@ import java.util.stream.Collectors;
 public class ProductMapper {
 
     public static Product toEntity(ProductRequest req) {
-        NotificationFrequency freq = NotificationFrequencyCalculator.calculate(
-                req.purchaseDate(), req.expirationDate(), req.quantityBought(), req.quantityConsumed()
-        );
-
         String nameLower = req.name() == null ? null : req.name().toLowerCase().trim();
         List<String> tokens = nameLower == null ? null : tokenizeName(nameLower);
 
@@ -46,7 +42,10 @@ public class ProductMapper {
                 .unit(req.unit())
                 .purchaseDate(req.purchaseDate())
                 .expirationDate(req.expirationDate())
-                .notificationFrequency(freq)
+                .notificationFrequency(null)
+                .notificationFrequencyOverride(null)
+                .lastNotificationSentAt(null)
+                .nextNotificationAt(null)
                 .tags(req.tags() == null || req.tags().isEmpty() ? null : List.copyOf(req.tags()))
                 .createdAt(null)
                 .updatedAt(null)
@@ -68,6 +67,9 @@ public class ProductMapper {
                 p.getUpdatedAt(),
                 p.getStatus(),
                 p.getNotificationFrequency() == null ? NotificationFrequency.MONTHLY : p.getNotificationFrequency(),
+                p.getNotificationFrequencyOverride() == null ? NotificationFrequencySource.AUTO : NotificationFrequencySource.MANUAL,
+                p.getLastNotificationSentAt(),
+                p.getNextNotificationAt(),
                 p.getTags() == null || p.getTags().isEmpty() ? List.of() : List.copyOf(p.getTags())
         );
     }

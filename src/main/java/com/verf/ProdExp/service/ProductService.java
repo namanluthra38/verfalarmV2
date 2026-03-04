@@ -28,6 +28,8 @@ public interface ProductService {
     int recomputeStatusesForUser(String userId);
     // Update notification frequency for a product
     ProductResponse updateNotificationFrequency(String id, NotificationFrequency frequency);
+    // Clear manual notification frequency override and return to auto mode
+    ProductResponse clearNotificationFrequencyOverride(String id);
     // Replace the tags list entirely
     ProductResponse replaceTags(String id, List<String> tags);
     // Add tags (ignore duplicates)

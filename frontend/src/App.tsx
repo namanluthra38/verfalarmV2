@@ -13,6 +13,7 @@ import VerifyResult from './pages/VerifyResult';
 import ErrorBoundary from './components/ErrorBoundary';
 import Profile from './pages/Profile';
 import { ThemeProvider } from './contexts/ThemeContext';
+import LandingPage from './pages/LandingPage';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
         <AuthProvider>
           <ErrorBoundary>
             <Routes>
+              <Route path="/home" element={<LandingPage />} />
               <Route path="/verify-success" element={<VerifyResult />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/check-email" element={<CheckEmail />} />

@@ -70,6 +70,8 @@ export default function GameCanvas({ onGameOver }: GameCanvasProps) {
 
     // Touch / mouse controls
     useEffect(() => {
+        if (!started) return;
+        
         const canvas = canvasRef.current;
         if (!canvas) return;
 
@@ -113,7 +115,7 @@ export default function GameCanvas({ onGameOver }: GameCanvasProps) {
             canvas.removeEventListener('mousemove', onMouse);
             canvas.removeEventListener('click', onMouse);
         };
-    }, []);
+    }, [started]);
 
     // Handle resize
     useEffect(() => {

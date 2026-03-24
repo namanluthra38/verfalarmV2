@@ -47,6 +47,9 @@ public class User {
     @Builder.Default
     private boolean emailVerified = false;
 
+    @Builder.Default
+    private Set<String> oauthProviders = new java.util.HashSet<>(); // e.g. {"GITHUB"}, {"GOOGLE"}, {"GITHUB","GOOGLE"}
+
     @Override
     public String toString() {
         return "User{" +

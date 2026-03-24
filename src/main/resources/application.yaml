@@ -51,6 +51,19 @@ spring:
             model: stepfun/step-3.5-flash:free
             max-tokens: 2048
 
+    security:
+      oauth2:
+        client:
+          registration:
+            github:
+              client-id: ${GITHUB_CLIENT_ID}
+              client-secret: ${GITHUB_CLIENT_SECRET}
+              scope: user:email, read:user
+            google:
+              client-id: ${GOOGLE_CLIENT_ID}
+              client-secret: ${GOOGLE_CLIENT_SECRET}
+              scope: openid, profile, email
+
 app:
   backendBaseUrl: ${BACKEND_BASE_URL:http://localhost:8080}
   frontendBaseUrl: ${FRONTEND_BASE_URL:http://localhost:5173}

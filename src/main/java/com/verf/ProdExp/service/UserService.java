@@ -24,4 +24,6 @@ public interface UserService {
 
     UserResponse updateDisplayName(String id, UpdateDisplayNameRequest request);
 
+    // OAuth find-or-create for login/merge
+    void findOrCreateOAuthUser(com.verf.ProdExp.security.oauth2.OAuthUserInfo info);
 }

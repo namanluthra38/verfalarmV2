@@ -137,4 +137,30 @@ public class UserServiceImpl implements UserService {
         User saved = userRepository.save(existing);
         return new UserResponse(saved.getId(), saved.getEmail(), saved.getRoles(), saved.isEnabled(), saved.getDisplayName(), saved.getCreatedAt(), saved.getUpdatedAt());
     }
+
+    @Override
+    public void findOrCreateOAuthUser(com.verf.ProdExp.security.oauth2.OAuthUserInfo info) {
+        userRepository.findByEmail(info.email()).ifPresentOrElse(
+            existing -> {
+                if (!existing.getOauthProviders().contains(info.provider())) {
+                    existing.getOauthProviders().add(info.provider());
+                    existing.setEmailVerified(true);
+                    userRepository.save(existing);
+                }
+            },
+            () -> {
+                String randomPassword = passwordEncoder.encode(java.util.UUID.randomUUID().toString());
+                User newUser = User.builder()
+                        .email(info.email())
+                        .password(randomPassword)
+                        .displayName(info.displayName())
+                        .roles(Set.of("USER"))
+                        .enabled(true)
+                        .emailVerified(true)
+                        .oauthProviders(new java.util.HashSet<>(Set.of(info.provider())))
+                        .build();
+                userRepository.save(newUser);
+            }
+        );
+    }
 }

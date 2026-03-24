@@ -14,6 +14,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import Profile from './pages/Profile';
 import { ThemeProvider } from './contexts/ThemeContext';
 import LandingPage from './pages/LandingPage';
+import OAuth2Callback from './pages/OAuth2Callback';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
           <ErrorBoundary>
             <Routes>
               <Route path="/home" element={<LandingPage />} />
+              <Route path="/oauth2/callback" element={<OAuth2Callback />} />
               <Route path="/verify-success" element={<VerifyResult />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/check-email" element={<CheckEmail />} />

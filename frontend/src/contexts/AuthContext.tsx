@@ -11,6 +11,7 @@ interface AuthContextType {
   logout: () => void;
   isAuthenticated: boolean;
   refreshUser: () => Promise<void>;
+  setTokenAndUser: (token: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -110,6 +111,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const setTokenAndUser = async (token: string) => {
+    AuthService.saveToken(token);
+    setToken(token);
+    try {
+      const currentUser = await AuthService.getCurrentUser(token);
+      setUser(currentUser);
+    } catch (err) {
+      AuthService.removeToken();
+      setToken(null);
+      setUser(null);
+      throw err;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -119,8 +134,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         login,
         register,
         logout,
-        isAuthenticated: !!user && !!token,
+        isAuthenticated: !!token, // Changed: only check token
         refreshUser,
+        setTokenAndUser,
       }}
     >
       {children}

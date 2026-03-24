@@ -38,6 +38,23 @@ export interface Particle {
     size: number;
 }
 
+export interface FloatingText {
+    x: number;
+    y: number;
+    text: string;
+    color: string;
+    life: number;
+    maxLife: number;
+    vy: number;
+    scale: number;
+}
+
+export interface ScreenFlash {
+    color: string;
+    life: number;
+    maxLife: number;
+}
+
 export interface GameState {
     score: number;
     lives: number;
@@ -45,6 +62,8 @@ export interface GameState {
     level: number;
     products: FallingProduct[];
     particles: Particle[];
+    floatingTexts: FloatingText[];
+    screenFlash: ScreenFlash | null;
     shieldBinIndex: number;
     isGameOver: boolean;
     wasted: number;

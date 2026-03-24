@@ -37,6 +37,20 @@ export function renderGame(
         ctx.restore();
     });
 
+    // Floating texts
+    state.floatingTexts.forEach((ft) => {
+        drawFloatingText(ctx, ft, w);
+    });
+
+    // Screen flash
+    if (state.screenFlash) {
+        ctx.save();
+        ctx.globalAlpha = state.screenFlash.life * 0.8;
+        ctx.fillStyle = state.screenFlash.color;
+        ctx.fillRect(0, 0, w, h);
+        ctx.restore();
+    }
+
     drawHUD(ctx, state, w);
 }
 
@@ -230,7 +244,7 @@ function drawProduct(
     ctx.restore();
 }
 
-/* ===== HUD (no level) ===== */
+/* ===== HUD (modern pill badges) ===== */
 function drawHUD(
     ctx: CanvasRenderingContext2D,
     state: GameState,
@@ -238,29 +252,104 @@ function drawHUD(
 ) {
     ctx.save();
 
-    const hudH = 50;
+    const hudH = 56;
     const hudGrad = ctx.createLinearGradient(0, 0, 0, hudH);
-    hudGrad.addColorStop(0, 'rgba(0,0,0,0.65)');
+    hudGrad.addColorStop(0, 'rgba(0,0,0,0.7)');
+    hudGrad.addColorStop(0.8, 'rgba(0,0,0,0.15)');
     hudGrad.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = hudGrad;
     ctx.fillRect(0, 0, w, hudH);
 
-    const fontSize = Math.max(14, Math.min(20, w * 0.03));
+    const fontSize = Math.max(12, Math.min(16, w * 0.025));
+    const padding = Math.max(12, w * 0.015);
+    const cy = 27;
 
-    // Score
-    ctx.font = `bold ${fontSize}px 'Inter', sans-serif`;
+    // === Score badge (left) ===
+    const scoreText = `${state.score}`;
+    const scoreLabel = 'SCORE';
+    ctx.font = `600 ${fontSize * 0.7}px 'Inter', sans-serif`;
+    const labelWidth = ctx.measureText(scoreLabel).width;
+    ctx.font = `800 ${fontSize * 1.15}px 'Inter', sans-serif`;
+    const numWidth = ctx.measureText(scoreText).width;
+    const badgeW = labelWidth + numWidth + 30;
+    const badgeH = 30;
+    const badgeX = padding;
+    const badgeY = cy - badgeH / 2;
+
+    // Badge background
+    ctx.beginPath();
+    roundRect(ctx, badgeX, badgeY, badgeW, badgeH, badgeH / 2);
+    ctx.fillStyle = 'rgba(46, 204, 64, 0.15)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(46, 204, 64, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Label
+    ctx.font = `600 ${fontSize * 0.65}px 'Inter', sans-serif`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#FFDC00';
-    ctx.fillText(`⭐ Score: ${state.score}`, 16, 25);
+    ctx.fillStyle = 'rgba(46, 204, 64, 0.7)';
+    ctx.letterSpacing = '1px';
+    ctx.fillText(scoreLabel, badgeX + 12, cy);
 
-    // Lives (right side)
-    ctx.textAlign = 'right';
+    // Number
+    ctx.font = `800 ${fontSize * 1.15}px 'Inter', sans-serif`;
+    ctx.fillStyle = '#2ECC40';
+    ctx.fillText(scoreText, badgeX + 12 + labelWidth + 8, cy);
+
+    // === Lives badge (right) ===
     let livesStr = '';
     for (let i = 0; i < state.maxLives; i++) {
-        livesStr += i < state.lives ? '💚 ' : '🖤 ';
+        livesStr += i < state.lives ? '💚' : '🖤';
     }
-    ctx.fillText(livesStr.trim(), w - 16, 25);
+    ctx.font = `${fontSize * 0.95}px sans-serif`;
+    const livesW = ctx.measureText(livesStr).width + 20;
+    const livesH = 30;
+    const livesX = w - padding - livesW;
+    const livesY = cy - livesH / 2;
+
+    ctx.beginPath();
+    roundRect(ctx, livesX, livesY, livesW, livesH, livesH / 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(livesStr, livesX + livesW / 2, cy);
+
+    ctx.restore();
+}
+
+/* ===== Floating Text ===== */
+function drawFloatingText(
+    ctx: CanvasRenderingContext2D,
+    ft: { x: number; y: number; text: string; color: string; life: number; scale: number },
+    canvasWidth: number
+) {
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, ft.life * 1.5);
+
+    const fontSize = Math.max(14, Math.min(22, canvasWidth * 0.028)) * ft.scale;
+    ctx.font = `bold ${fontSize}px 'Inter', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Text shadow / outline for readability
+    ctx.shadowColor = ft.color;
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = ft.color;
+    ctx.fillText(ft.text, ft.x, ft.y);
+
+    // Second pass with white outline for contrast
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+    ctx.lineWidth = 2;
+    ctx.strokeText(ft.text, ft.x, ft.y);
+    ctx.fillText(ft.text, ft.x, ft.y);
 
     ctx.restore();
 }

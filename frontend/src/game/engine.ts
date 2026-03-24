@@ -1,4 +1,4 @@
-import type { GameState, GameConfig, Dustbin, FallingProduct, Particle } from './types';
+import type { GameState, GameConfig, Dustbin, FallingProduct, Particle, FloatingText } from './types';
 import { getRandomProduct } from './products';
 
 export const DEFAULT_CONFIG: GameConfig = {
@@ -50,6 +50,8 @@ export function initGameState(
         level: 1,
         products: [],
         particles: [],
+        floatingTexts: [],
+        screenFlash: null,
         shieldBinIndex: Math.floor(config.numBins / 2),
         isGameOver: false,
         wasted: 0,
@@ -109,6 +111,24 @@ function createParticles(
     return particles;
 }
 
+function createFloatingText(
+    x: number,
+    y: number,
+    text: string,
+    color: string
+): FloatingText {
+    return {
+        x,
+        y,
+        text,
+        color,
+        life: 1,
+        maxLife: 50,
+        vy: -1.8,
+        scale: 0.3,
+    };
+}
+
 export function updateGame(
     state: GameState,
     config: GameConfig = DEFAULT_CONFIG
@@ -118,6 +138,7 @@ export function updateGame(
     const newState = { ...state };
     newState.products = [...state.products];
     newState.particles = [...state.particles];
+    newState.floatingTexts = [...state.floatingTexts];
 
     // Spawn products
     newState.spawnTimer++;
@@ -144,18 +165,18 @@ export function updateGame(
 
         // Check if product reached the bins
         if (updated.y + updated.height >= binBottom) {
+            const cx = updated.x + updated.width / 2;
             if (updated.binIndex === newState.shieldBinIndex) {
                 // SAVED!
                 newState.score++;
                 newState.totalSaved++;
                 newState.particles.push(
-                    ...createParticles(
-                        updated.x + updated.width / 2,
-                        binBottom,
-                        '#2ECC40',
-                        12
-                    )
+                    ...createParticles(cx, binBottom, '#2ECC40', 12)
                 );
+                newState.floatingTexts.push(
+                    createFloatingText(cx, binBottom - 30, '+1 Saved! ✓', '#2ECC40')
+                );
+                newState.screenFlash = { color: 'rgba(46, 204, 64, 0.15)', life: 1, maxLife: 15 };
 
                 // Gradually increase difficulty every 5 saves
                 if (
@@ -176,13 +197,12 @@ export function updateGame(
                 newState.lives--;
                 newState.totalWasted++;
                 newState.particles.push(
-                    ...createParticles(
-                        updated.x + updated.width / 2,
-                        binBottom,
-                        '#ff4444',
-                        10
-                    )
+                    ...createParticles(cx, binBottom, '#ff4444', 10)
                 );
+                newState.floatingTexts.push(
+                    createFloatingText(cx, binBottom - 30, 'Wasted! ✗', '#ff4444')
+                );
+                newState.screenFlash = { color: 'rgba(255, 68, 68, 0.18)', life: 1, maxLife: 18 };
                 if (newState.lives <= 0) {
                     newState.lives = 0;
                     newState.isGameOver = true;
@@ -206,6 +226,27 @@ export function updateGame(
             size: p.size * 0.97,
         }))
         .filter((p) => p.life > 0);
+
+    // Update floating texts
+    newState.floatingTexts = newState.floatingTexts
+        .map((ft) => ({
+            ...ft,
+            y: ft.y + ft.vy,
+            life: ft.life - 1 / ft.maxLife,
+            scale: Math.min(1, ft.scale + 0.08),
+        }))
+        .filter((ft) => ft.life > 0);
+
+    // Update screen flash
+    if (newState.screenFlash) {
+        newState.screenFlash = {
+            ...newState.screenFlash,
+            life: newState.screenFlash.life - 1 / newState.screenFlash.maxLife,
+        };
+        if (newState.screenFlash.life <= 0) {
+            newState.screenFlash = null;
+        }
+    }
 
     return newState;
 }

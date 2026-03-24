@@ -9,7 +9,7 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import java.util.Collection;
 import java.util.Map;
 
-public class CustomOidcUser implements OidcUser {
+public class CustomOidcUser implements OidcUser, OAuth2AuthenticatedPrincipal {
     private final OidcUser oidcUser;
     private final User user;
 

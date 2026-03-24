@@ -27,10 +27,8 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                                         Authentication authentication) throws IOException {
         Object principal = authentication.getPrincipal();
         com.verf.ProdExp.entity.User user;
-        if (principal instanceof CustomOAuth2User oAuth2User) {
-            user = oAuth2User.getUser();
-        } else if (principal instanceof CustomOidcUser oidcUser) {
-            user = oidcUser.getUser();
+        if (principal instanceof OAuth2AuthenticatedPrincipal authenticatedPrincipal) {
+            user = authenticatedPrincipal.getUser();
         } else {
             throw new IllegalStateException("Unsupported principal type: " + principal.getClass());
         }

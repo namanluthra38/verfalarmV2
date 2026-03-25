@@ -32,6 +32,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         } else {
             throw new IllegalStateException("Unsupported principal type: " + principal.getClass());
         }
+        System.out.println(frontendBaseUrl);
         String token = jwtProvider.generateToken(user.getId());
         String redirectUrl = UriComponentsBuilder
                 .fromUriString(frontendBaseUrl + "/oauth2/callback")

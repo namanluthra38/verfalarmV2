@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { LogIn } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'https://verfalarm-app.onrender.com';
 
 export default function Login() {
   const [email, setEmail] = useState('');

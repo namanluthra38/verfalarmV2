@@ -42,22 +42,14 @@ export default function LandingPage() {
           {/* ── Hero ── */}
           <section className="text-center pt-8 animate-float-up">
  
-            {/* Eyebrow pill */}
-            <div className="flex justify-center mb-7">
-              <span className="inline-flex items-center gap-2 text-xs font-semibold tracking-[0.15em] uppercase text-emerald-700 dark:text-emerald-400 px-4 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border border-emerald-200/60 dark:border-emerald-700/50">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
-                Product Expiration Tracker
-              </span>
-            </div>
- 
             {/* Headline */}
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-gray-900 dark:text-slate-100 mb-6 tracking-tight leading-[1.08]">
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-slate-900 dark:text-slate-100 mb-6 tracking-tight leading-[1.08]">
               Never let your products{' '}
               <span className="text-gradient-emerald">Go to Waste</span>
             </h1>
  
             {/* Subtext */}
-            <p className="text-lg md:text-xl text-gray-500 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed font-medium">
+            <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed font-medium">
               Verfalarm is your personal product expiration reminder. We notify you before
               your food, cosmetics, or medicines expire. Play the mini-game below to see how fast things can go bad!
             </p>
@@ -66,7 +58,7 @@ export default function LandingPage() {
             <div className="flex items-center justify-center gap-3 mt-10 flex-wrap">
               <button
                 onClick={() => navigate('/dashboard')}
-                className="group relative inline-flex items-center justify-center gap-2.5 bg-emerald-400 dark:bg-emerald-600 text-white font-bold py-3.5 px-8 rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_40px_rgba(16,185,129,0.3)] dark:hover:shadow-[0_0_40px_rgba(16,185,129,0.2)]"
+                className="group relative inline-flex items-center justify-center gap-2.5 bg-emerald-700 dark:bg-emerald-600 text-white font-bold py-3.5 px-8 rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_10px_40px_rgba(4,120,87,0.4)] dark:hover:shadow-[0_0_40px_rgba(16,185,129,0.2)]"
               >
                 <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:animate-shimmer" />
                 <span className="relative z-10 text-base tracking-wide">Try Verfalarm</span>

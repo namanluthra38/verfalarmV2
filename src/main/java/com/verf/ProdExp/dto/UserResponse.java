@@ -10,6 +10,7 @@ public record UserResponse(
         boolean enabled,
         String displayName,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        Set<String> oauthProviders
 ) {
 }

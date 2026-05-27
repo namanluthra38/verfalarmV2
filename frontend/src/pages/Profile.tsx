@@ -177,103 +177,128 @@ export default function Profile() {
                     </div>
 
                     {/* Security Section */}
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border-2 border-emerald-100 dark:border-slate-700 overflow-hidden">
-                        <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                                    <Shield className="w-6 h-6 text-white" />
+                    {user.oauthProviders && user.oauthProviders.length > 0 ? (
+                        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border-2 border-emerald-100 dark:border-slate-700 overflow-hidden">
+                            <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                                        <Shield className="w-6 h-6 text-white" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-white">Security</h3>
+                                        <p className="text-orange-50 text-sm">Account linked via OAuth</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="text-lg font-semibold text-white">Security</h3>
-                                    <p className="text-orange-50 text-sm">Keep your account secure with a strong password</p>
+                            </div>
+
+                            <div className="p-6">
+                                <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200 px-4 py-3 rounded-lg text-sm">
+                                    <strong>Your account uses {user.oauthProviders.join(', ')} sign-in.</strong>
+                                    <div className="mt-2">
+                                        Password change is not available for OAuth-only accounts. To use email/password sign-in, create a separate account or remove the OAuth provider from your account settings.
+                                    </div>
                                 </div>
                             </div>
                         </div>
-
-                        <form onSubmit={handlePasswordSave} className="p-6">
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                                        Current password
-                                    </label>
-                                    <div className="relative">
-                                        <input
-                                            type="password"
-                                            value={currentPassword}
-                                            onChange={(e) => setCurrentPassword(e.target.value)}
-                                            className="w-full px-4 py-3 pl-11 border-2 border-gray-200 dark:border-slate-600 rounded-lg
-                               focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500
-                               transition-all outline-none bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
-                                            placeholder="Enter current password"
-                                        />
-                                        <KeyRound className="w-5 h-5 text-gray-400 dark:text-slate-400 absolute left-3 top-3.5" />
+                    ) : (
+                        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border-2 border-emerald-100 dark:border-slate-700 overflow-hidden">
+                            <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                                        <Shield className="w-6 h-6 text-white" />
                                     </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                                        New password
-                                    </label>
-                                    <div className="relative">
-                                        <input
-                                            type="password"
-                                            value={newPassword}
-                                            onChange={(e) => setNewPassword(e.target.value)}
-                                            className="w-full px-4 py-3 pl-11 border-2 border-gray-200 dark:border-slate-600 rounded-lg
-                               focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500
-                               transition-all outline-none bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
-                                            placeholder="At least 6 characters"
-                                        />
-                                        <KeyRound className="w-5 h-5 text-gray-400 dark:text-slate-400 absolute left-3 top-3.5" />
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-white">Security</h3>
+                                        <p className="text-orange-50 text-sm">Keep your account secure with a strong password</p>
                                     </div>
-                                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-2 ml-1">
-                                        Choose a strong password with at least 6 characters
-                                    </p>
-                                </div>
-
-                                {pwError && (
-                                    <div className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex items-start gap-2">
-                                        <span className="font-semibold">⚠</span>
-                                        <span>{pwError}</span>
-                                    </div>
-                                )}
-
-                                {pwSuccess && (
-                                    <div className="bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
-                                        <CheckCircle className="w-4 h-4" />
-                                        <span className="font-medium">{pwSuccess}</span>
-                                    </div>
-                                )}
-
-                                <div className="flex gap-3 pt-2">
-                                    <button
-                                        type="submit"
-                                        disabled={pwLoading}
-                                        className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-3 rounded-lg
-                              hover:from-amber-600 hover:to-orange-600 shadow-md dark:shadow-black/30 font-semibold
-                              disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                                    >
-                                        <Shield className="w-5 h-5" />
-                                        {pwLoading ? 'Updating...' : 'Update Password'}
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setCurrentPassword('');
-                                            setNewPassword('');
-                                            setPwError('');
-                                            setPwSuccess('');
-                                        }}
-                                        className="px-6 py-3 bg-white dark:bg-slate-700 border-2 border-gray-300 dark:border-slate-700 rounded-lg
-                             hover:bg-gray-50 dark:hover:bg-slate-700 font-medium text-gray-700 dark:text-slate-100 transition-all"
-                                    >
-                                        Cancel
-                                    </button>
                                 </div>
                             </div>
-                        </form>
-                    </div>
+
+                            <form onSubmit={handlePasswordSave} className="p-6">
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                                            Current password
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type="password"
+                                                value={currentPassword}
+                                                onChange={(e) => setCurrentPassword(e.target.value)}
+                                                className="w-full px-4 py-3 pl-11 border-2 border-gray-200 dark:border-slate-600 rounded-lg
+                               focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500
+                               transition-all outline-none bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
+                                                placeholder="Enter current password"
+                                            />
+                                            <KeyRound className="w-5 h-5 text-gray-400 dark:text-slate-400 absolute left-3 top-3.5" />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                                            New password
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type="password"
+                                                value={newPassword}
+                                                onChange={(e) => setNewPassword(e.target.value)}
+                                                className="w-full px-4 py-3 pl-11 border-2 border-gray-200 dark:border-slate-600 rounded-lg
+                               focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500
+                               transition-all outline-none bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
+                                                placeholder="At least 6 characters"
+                                            />
+                                            <KeyRound className="w-5 h-5 text-gray-400 dark:text-slate-400 absolute left-3 top-3.5" />
+                                        </div>
+                                        <p className="text-xs text-gray-500 dark:text-slate-400 mt-2 ml-1">
+                                            Choose a strong password with at least 6 characters
+                                        </p>
+                                    </div>
+
+                                    {pwError && (
+                                        <div className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex items-start gap-2">
+                                            <span className="font-semibold">⚠</span>
+                                            <span>{pwError}</span>
+                                        </div>
+                                    )}
+
+                                    {pwSuccess && (
+                                        <div className="bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
+                                            <CheckCircle className="w-4 h-4" />
+                                            <span className="font-medium">{pwSuccess}</span>
+                                        </div>
+                                    )}
+
+                                    <div className="flex gap-3 pt-2">
+                                        <button
+                                            type="submit"
+                                            disabled={pwLoading}
+                                            className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-3 rounded-lg
+                              hover:from-amber-600 hover:to-orange-600 shadow-md dark:shadow-black/30 font-semibold
+                              disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                        >
+                                            <Shield className="w-5 h-5" />
+                                            {pwLoading ? 'Updating...' : 'Update Password'}
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setCurrentPassword('');
+                                                setNewPassword('');
+                                                setPwError('');
+                                                setPwSuccess('');
+                                            }}
+                                            className="px-6 py-3 bg-white dark:bg-slate-700 border-2 border-gray-300 dark:border-slate-700 rounded-lg
+                             hover:bg-gray-50 dark:hover:bg-slate-700 font-medium text-gray-700 dark:text-slate-100 transition-all"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

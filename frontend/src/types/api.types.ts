@@ -24,6 +24,8 @@ export interface UserResponse {
   displayName: string;
   createdAt: string;
   updatedAt: string;
+  // New: linked OAuth providers (e.g. ["GOOGLE","GITHUB"]) if any
+  oauthProviders?: string[];
 }
 
 export interface UpdateUserRequest {

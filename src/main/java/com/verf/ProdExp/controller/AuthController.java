@@ -7,11 +7,9 @@ import com.verf.ProdExp.dto.UserResponse;
 import com.verf.ProdExp.entity.User;
 import com.verf.ProdExp.repository.UserRepository;
 import com.verf.ProdExp.security.JwtProvider;
-import com.verf.ProdExp.service.MailService;
 import com.verf.ProdExp.service.UserService;
 import com.verf.ProdExp.service.VerificationTokenService;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -37,7 +35,6 @@ public class AuthController {
     private final JwtProvider jwtProvider;
     private final UserRepository userRepository;
     private final VerificationTokenService verificationTokenService;
-    private final MailService mailService;
 
     // Frontend base URL to redirect users after verification. Default points to dev frontend (5173).
     @Value("${app.frontendBaseUrl:http://localhost:5173}")
@@ -96,7 +93,7 @@ public class AuthController {
             log.debug("Authenticated principal but user not found in DB: userId={}", userId);
             return ResponseEntity.status(404).build();
         }
-        UserResponse resp = new UserResponse(user.getId(), user.getEmail(), user.getRoles(), user.isEnabled(), user.getDisplayName(), user.getCreatedAt(), user.getUpdatedAt());
+        UserResponse resp = new UserResponse(user.getId(), user.getEmail(), user.getRoles(), user.isEnabled(), user.getDisplayName(), user.getCreatedAt(), user.getUpdatedAt(), user.getOauthProviders());
         log.debug("/me returning userId={}", userId);
         return ResponseEntity.ok(resp);
     }

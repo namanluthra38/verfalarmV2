@@ -1,4 +1,5 @@
 export const API_CONFIG = {
+  //BASE_URL: import.meta.env.API_URL || 'http://localhost:8080',
   BASE_URL: import.meta.env.API_URL || 'https://verfalarm-app.onrender.com',
   ENDPOINTS: {
     AUTH: {

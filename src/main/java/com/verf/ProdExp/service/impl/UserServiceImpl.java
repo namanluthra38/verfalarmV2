@@ -48,13 +48,13 @@ public class UserServiceImpl implements UserService {
 
         User saved = userRepository.save(u);
         mailService.sendWelcomeEmail(saved);
-        return new UserResponse(saved.getId(), saved.getEmail(), saved.getRoles(), saved.isEnabled(), saved.getDisplayName(), saved.getCreatedAt(), saved.getUpdatedAt());
+        return new UserResponse(saved.getId(), saved.getEmail(), saved.getRoles(), saved.isEnabled(), saved.getDisplayName(), saved.getCreatedAt(), saved.getUpdatedAt(), saved.getOauthProviders());
     }
 
     @Override
     public UserResponse getById(String id) {
         User u = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        return new UserResponse(u.getId(), u.getEmail(), u.getRoles(), u.isEnabled(), u.getDisplayName(), u.getCreatedAt(), u.getUpdatedAt());
+        return new UserResponse(u.getId(), u.getEmail(), u.getRoles(), u.isEnabled(), u.getDisplayName(), u.getCreatedAt(), u.getUpdatedAt(), u.getOauthProviders());
     }
 
     @Override
@@ -83,7 +83,7 @@ public class UserServiceImpl implements UserService {
             existing.setEnabled(request.enabled());
         }
         User saved = userRepository.save(existing);
-        return new UserResponse(saved.getId(), saved.getEmail(), saved.getRoles(), saved.isEnabled(), saved.getDisplayName(), saved.getCreatedAt(), saved.getUpdatedAt());
+        return new UserResponse(saved.getId(), saved.getEmail(), saved.getRoles(), saved.isEnabled(), saved.getDisplayName(), saved.getCreatedAt(), saved.getUpdatedAt(), saved.getOauthProviders());
     }
 
     @Override
@@ -113,6 +113,11 @@ public class UserServiceImpl implements UserService {
 
         User existing = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
+        // If the account is linked to any OAuth provider, disallow password change
+        if (existing.getOauthProviders() != null && !existing.getOauthProviders().isEmpty()) {
+            throw new BadRequestException("Password change is not available for accounts linked via OAuth providers");
+        }
+
         // verify current password matches stored one
         if (!passwordEncoder.matches(request.currentPassword(), existing.getPassword())) {
             throw new BadRequestException("currentPassword is incorrect");
@@ -135,7 +140,7 @@ public class UserServiceImpl implements UserService {
         User existing = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
         existing.setDisplayName(request.displayName());
         User saved = userRepository.save(existing);
-        return new UserResponse(saved.getId(), saved.getEmail(), saved.getRoles(), saved.isEnabled(), saved.getDisplayName(), saved.getCreatedAt(), saved.getUpdatedAt());
+        return new UserResponse(saved.getId(), saved.getEmail(), saved.getRoles(), saved.isEnabled(), saved.getDisplayName(), saved.getCreatedAt(), saved.getUpdatedAt(), saved.getOauthProviders());
     }
 
     @Override

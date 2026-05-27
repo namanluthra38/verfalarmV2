@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,8 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
+
+    private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
 
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
@@ -47,7 +51,13 @@ public class UserServiceImpl implements UserService {
                 .build();
 
         User saved = userRepository.save(u);
-        mailService.sendWelcomeEmail(saved);
+        // Welcome email is best-effort. Log failures but do not fail user registration.
+        try {
+            mailService.sendWelcomeEmail(saved);
+        } catch (Exception e) {
+            log.warn("Failed to send welcome email to {}: {}", saved.getEmail(), e.getMessage());
+        }
+
         return new UserResponse(saved.getId(), saved.getEmail(), saved.getRoles(), saved.isEnabled(), saved.getDisplayName(), saved.getCreatedAt(), saved.getUpdatedAt(), saved.getOauthProviders());
     }
 
